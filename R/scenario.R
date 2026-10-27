@@ -54,7 +54,7 @@
   .validate_taxable_income(adult$taxable_income,
                            paste0(field, "$taxable_income"))
 
-  required_mls_fields <- c(
+  required_income_fields <- c(
     "reportable_fringe_benefits",
     "reportable_super_contributions",
     "net_investment_loss",
@@ -64,14 +64,14 @@
     "tax_free_pension_benefit",
     "child_maintenance_expenditure"
   )
-  if (!all(required_mls_fields %in% names(adult))) {
+  if (!all(required_income_fields %in% names(adult))) {
     stop(
       sprintf("%s must include all required income fields.", field),
       call. = FALSE
     )
   }
 
-  for (name in required_mls_fields) {
+  for (name in required_income_fields) {
     .validate_nonnegative_whole_amount(
       adult[[name]], paste0(field, "$", name)
     )
