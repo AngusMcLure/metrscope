@@ -67,7 +67,7 @@ The 2026–27 parameters are stored in `R/policy_schedules_2026_27.R` and source
 - The income-free area is $69,131.
 - The higher income-free area is $123,078.
 - Below or at the higher income-free area, Method 1 reduces the sum of maximum age-specific child rates by 20 cents for each dollar of family ATI above $69,131, but not below the base rate.
-- Above $123,078, Method 2 reduces the sum of base rates by 30 cents for each dollar of family ATI above $123,078, down to zero.
+- Above $123,078, Method 2 reduces the sum of base rates by 30 cents for each dollar of family ATI above $123,078, down to zero. The Method 1 comparison rate is also calculated using a 30-cent taper above $123,078, and the higher of the two rates is used; this matters for larger families.
 - The maximum annual rate used is $6,139.30 per child aged under 13 and $7,989.85 per child aged 13–19 who meets the model's secondary-school condition. The base rate is $1,971 per eligible child.
 
 The function `family_tax_benefit_part_a(scenario)` returns the annual family rate after this income test. `ftb_part_a_components(scenario)` exposes family ATI, maximum rate, base rate, selected method, income-test reduction, and resulting FTB-A rate for itemised downstream calculations.
@@ -89,6 +89,7 @@ Official references:
 - [DSS Family Assistance Guide — Current FTB rates and income-test amounts](https://guides.dss.gov.au/family-assistance-guide/3/1/1/20)
 - [DSS Family Assistance Guide — Adjusted taxable income](https://guides.dss.gov.au/family-assistance-guide/1/1/a/20)
 - [DSS Family Assistance Guide — Calculating a rate of FTB](https://guides.dss.gov.au/family-assistance-guide/3/1/1/10)
+- [DSS Family Assistance Guide — Method 2 income test and comparison with Method 1](https://guides.dss.gov.au/family-assistance-guide/3/1/8/20)
 
 ## Component calculations
 
