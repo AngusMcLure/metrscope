@@ -1,15 +1,9 @@
 # Machine-readable 2026–27 policy schedules.
 #
-# Each schedule is piecewise linear. A row applies on
-# [lower_bound, upper_bound), and its value is:
-#   value_at_lower + slope * (income - lower_bound)
-#
-# Slope is the marginal change in the rule amount per additional dollar of
-# the schedule's input. A positive slope increases a liability/benefit amount;
-# a negative slope decreases it. The last interval has upper_bound = Inf.
-#
-# These values are policy parameters, not calculation logic. Keep the
-# financial year and source references alongside the schedule definitions.
+# Each piecewise schedule row applies on [lower_bound, upper_bound), and its
+# value is value_at_lower + slope * (input - lower_bound). MLS is household-
+# tiered rather than a single piecewise-linear function, so its thresholds
+# and rates are stored separately below.
 
 policy_schedules_2026_27 <- list(
   resident_income_tax = list(
@@ -56,5 +50,18 @@ policy_schedules_2026_27 <- list(
       value_at_lower = c(0, 0, 700.26),
       slope = c(0, 0.10, 0.02)
     )
+  ),
+  medicare_levy_surcharge = list(
+    label = "Medicare levy surcharge",
+    financial_year = "2026-27",
+    sources = c(
+      "https://www.legislation.gov.au/C2004A03351/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html",
+      "https://www.privatehealth.gov.au/health_insurance/surcharges_incentives/medicare_levy.htm"
+    ),
+    individual_income_threshold = 28011,
+    single_thresholds = c(105000, 123000, 164000),
+    family_thresholds = c(210000, 246000, 328000),
+    extra_child_threshold = 1500,
+    rates = c(0, 0.01, 0.0125, 0.015)
   )
 )
