@@ -195,6 +195,112 @@ medicare_levy_surcharge <- function(scenario) {
   surcharge
 }
 
+# Adjusted taxable income for FTB purposes. This differs from MLS income:
+# it includes adjusted fringe benefits, target foreign income, tax-free pension
+# or benefit amounts, reportable super contributions and subtracts child
+# maintenance expenditure.
+.adult_ftb_adjusted_taxable_income <- function(adult) {
+  adult$taxable_income +
+    adult$adjusted_fringe_benefits +
+    adult$target_foreign_income +
+    adult$net_investment_loss +
+    adult$tax_free_pension_benefit +
+    adult$reportable_super_contributions -
+    adult$child_maintenance_expenditure
+}
+
+.ftb_part_a_calculation <- function(scenario) {
+  .validate_scenario(scenario)
+  policy <- .policy_schedules_for_year(scenario$financial_year)$family_tax_benefit_part_a
+  children <- Filter(.is_ftb_a_child, scenario$children)
+  if (length(children) == 0L) {
+    return(list(
+      family_adjusted_taxable_income = max(0, sum(vapply(
+        scenario$adults, .adult_ftb_adjusted_taxable_income, numeric(1)
+      ))),
+      maximum_rate = 0,
+      base_rate = 0,
+      income_test_method = "none",
+      income_test_reduction = 0,
+      ftb_part_a = 0
+    ))
+  }
+
+  family_ati <- max(0, sum(vapply(
+    scenario$adults, .adult_ftb_adjusted_taxable_income, numeric(1)
+  )))
+  child_rates <- vapply(children, function(child) {
+    if (child$age < 13) {
+      policy$standard_rate_under_13
+    } else {
+      policy$standard_rate_13_and_over
+    }
+  }, numeric(1))
+  maximum_rate <- sum(child_rates)
+  base_rate <- length(children) * policy$base_rate_per_child
+
+  if (family_ati <= policy$higher_income_free_area) {
+    reduction <- max(0, family_ati - policy$income_free_area) *
+      policy$method_1_taper
+    rate <- max(base_rate, maximum_rate - reduction)
+    reduction <- maximum_rate - rate
+    method <- "method_1"
+  } else {
+    income_above_higher_area <- family_ati - policy$higher_income_free_area
+    method_1_rate <- max(
+      0,
+      maximum_rate -
+        (policy$higher_income_free_area - policy$income_free_area) *
+          policy$method_1_taper -
+        income_above_higher_area * policy$method_2_taper
+    )
+    method_2_rate <- max(
+      0,
+      base_rate - income_above_higher_area * policy$method_2_taper
+    )
+    rate <- max(method_1_rate, method_2_rate)
+    if (method_1_rate > method_2_rate) {
+      method <- "method_1_comparison"
+      reduction <- maximum_rate - rate
+    } else {
+      method <- "method_2"
+      reduction <- base_rate - rate
+    }
+  }
+
+  list(
+    family_adjusted_taxable_income = family_ati,
+    maximum_rate = maximum_rate,
+    base_rate = base_rate,
+    income_test_method = method,
+    income_test_reduction = reduction,
+    ftb_part_a = rate
+  )
+}
+
+# Calculate the annual FTB Part A rate after the family income test but before
+# the maintenance income test, FTB-A supplement, Rent Assistance, Energy
+# Supplement, and other eligibility-related adjustments.
+family_tax_benefit_part_a <- function(scenario) {
+  result <- .ftb_part_a_calculation(scenario)
+  stats::setNames(result$ftb_part_a, "family")
+}
+
+# Expose the main intermediate quantities so downstream METR calculations can
+# show why a change in either adult's income changes the household payment.
+ftb_part_a_components <- function(scenario) {
+  result <- .ftb_part_a_calculation(scenario)
+  data.frame(
+    financial_year = scenario$financial_year,
+    family_adjusted_taxable_income = result$family_adjusted_taxable_income,
+    maximum_rate = result$maximum_rate,
+    base_rate = result$base_rate,
+    income_test_method = result$income_test_method,
+    income_test_reduction = result$income_test_reduction,
+    ftb_part_a = result$ftb_part_a
+  )
+}
+
 # Component-level annual liability for each standard resident individual.
 # LITO does not reduce the Medicare levy. MLS is shown separately and is
 # included in total_tax_and_levies.

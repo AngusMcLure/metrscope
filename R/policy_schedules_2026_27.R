@@ -51,6 +51,22 @@ policy_schedules_2026_27 <- list(
       slope = c(0, 0.10, 0.02)
     )
   ),
+  family_tax_benefit_part_a = list(
+    label = "Family Tax Benefit Part A annual rate before maintenance test and supplements",
+    financial_year = "2026-27",
+    sources = c(
+      "https://www.servicesaustralia.gov.au/income-test-for-family-tax-benefit-part",
+      "https://guides.dss.gov.au/family-assistance-guide/3/1/1/20",
+      "https://guides.dss.gov.au/family-assistance-guide/1/1/a/20"
+    ),
+    income_free_area = 69131,
+    higher_income_free_area = 123078,
+    method_1_taper = 0.20,
+    method_2_taper = 0.30,
+    standard_rate_under_13 = 6139.30,
+    standard_rate_13_and_over = 7989.85,
+    base_rate_per_child = 1971.00
+  ),
   medicare_levy_surcharge = list(
     label = "Medicare levy surcharge",
     financial_year = "2026-27",

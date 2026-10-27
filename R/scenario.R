@@ -1,8 +1,9 @@
 # Minimal S3 adult and scenario objects.
 #
 # Adult objects contain taxable income and income-test adjustments used by
-# the Medicare levy surcharge (MLS). Children and cover status are household
-# fields because MLS thresholds and cover requirements operate at that level.
+# the Medicare levy surcharge (MLS) and Family Tax Benefit Part A (FTB-A).
+# Children are represented individually; the scenario derives the dependent-child
+# count used by MLS from this list. Hospital-cover status is a household field.
 # The constructors do not validate whether tax rules exist for the requested
 # financial year; the calculation functions are responsible for that check.
 
@@ -53,20 +54,24 @@
   .validate_taxable_income(adult$taxable_income,
                            paste0(field, "$taxable_income"))
 
-  required_mls_fields <- c(
+  required_income_fields <- c(
     "reportable_fringe_benefits",
     "reportable_super_contributions",
     "net_investment_loss",
-    "family_trust_distribution"
+    "family_trust_distribution",
+    "adjusted_fringe_benefits",
+    "target_foreign_income",
+    "tax_free_pension_benefit",
+    "child_maintenance_expenditure"
   )
-  if (!all(required_mls_fields %in% names(adult))) {
+  if (!all(required_income_fields %in% names(adult))) {
     stop(
-      sprintf("%s must include all required MLS income fields.", field),
+      sprintf("%s must include all required income fields.", field),
       call. = FALSE
     )
   }
 
-  for (name in required_mls_fields) {
+  for (name in required_income_fields) {
     .validate_nonnegative_whole_amount(
       adult[[name]], paste0(field, "$", name)
     )
@@ -78,13 +83,21 @@ new_adult <- function(taxable_income,
                       reportable_fringe_benefits = 0,
                       reportable_super_contributions = 0,
                       net_investment_loss = 0,
-                      family_trust_distribution = 0) {
+                      family_trust_distribution = 0,
+                      adjusted_fringe_benefits = 0,
+                      target_foreign_income = 0,
+                      tax_free_pension_benefit = 0,
+                      child_maintenance_expenditure = 0) {
   fields <- list(
     taxable_income = taxable_income,
     reportable_fringe_benefits = reportable_fringe_benefits,
     reportable_super_contributions = reportable_super_contributions,
     net_investment_loss = net_investment_loss,
-    family_trust_distribution = family_trust_distribution
+    family_trust_distribution = family_trust_distribution,
+    adjusted_fringe_benefits = adjusted_fringe_benefits,
+    target_foreign_income = target_foreign_income,
+    tax_free_pension_benefit = tax_free_pension_benefit,
+    child_maintenance_expenditure = child_maintenance_expenditure
   )
   for (name in names(fields)) {
     .validate_nonnegative_whole_amount(fields[[name]], name)
@@ -119,6 +132,87 @@ new_adult <- function(taxable_income,
   invisible(dependent_children)
 }
 
+# Child facts are shared across policies; each policy applies its own rules.
+.validate_children <- function(children) {
+  if (!is.list(children)) {
+    stop("children must be a list of child objects.", call. = FALSE)
+  }
+  for (i in seq_along(children)) {
+    child <- children[[i]]
+    field <- sprintf("children[[%d]]", i)
+    required <- c("age", "full_time_student", "study_type",
+                  "australian_tax_resident", "maintained_by_family")
+    if (!inherits(child, "child") || !is.list(child) ||
+        !all(required %in% names(child))) {
+      stop(sprintf("%s must be a child object with all required fields.", field),
+           call. = FALSE)
+    }
+    if (!is.numeric(child$age) || length(child$age) != 1L ||
+        is.na(child$age) || !is.finite(child$age) ||
+        child$age < 0 || child$age > 24 || child$age != floor(child$age)) {
+      stop(sprintf("%s$age must be a whole number from 0 to 24.", field),
+           call. = FALSE)
+    }
+    if (!is.logical(child$full_time_student) ||
+        length(child$full_time_student) != 1L ||
+        is.na(child$full_time_student)) {
+      stop(sprintf("%s$full_time_student must be TRUE or FALSE.", field),
+           call. = FALSE)
+    }
+    if (!is.character(child$study_type) || length(child$study_type) != 1L ||
+        is.na(child$study_type) ||
+        !child$study_type %in% c("none", "secondary", "tertiary", "other")) {
+      stop(sprintf(
+        "%s$study_type must be one of 'none', 'secondary', 'tertiary', or 'other'.",
+        field
+      ), call. = FALSE)
+    }
+    if (child$full_time_student && child$study_type == "none") {
+      stop(sprintf("%s$study_type cannot be 'none' for a full-time student.", field),
+           call. = FALSE)
+    }
+    for (name in c("australian_tax_resident", "maintained_by_family")) {
+      value <- child[[name]]
+      if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+        stop(sprintf("%s$%s must be TRUE or FALSE.", field, name), call. = FALSE)
+      }
+    }
+  }
+  invisible(children)
+}
+
+# MLS and FTB-A use different eligibility rules for the same child facts.
+.is_mls_dependent_child <- function(child) {
+  isTRUE(child$australian_tax_resident) &&
+    isTRUE(child$maintained_by_family) &&
+    (child$age < 21 ||
+       (child$age < 25 && isTRUE(child$full_time_student) &&
+          child$study_type %in% c("secondary", "tertiary")))
+}
+
+.is_ftb_a_child <- function(child) {
+  child$age < 16 ||
+    (child$age <= 19 && isTRUE(child$full_time_student) &&
+       identical(child$study_type, "secondary"))
+}
+
+new_child <- function(age, full_time_student = FALSE, study_type = "none",
+                      australian_tax_resident = TRUE,
+                      maintained_by_family = TRUE) {
+  child <- structure(
+    list(
+      age = age,
+      full_time_student = full_time_student,
+      study_type = study_type,
+      australian_tax_resident = australian_tax_resident,
+      maintained_by_family = maintained_by_family
+    ),
+    class = "child"
+  )
+  .validate_children(list(child))
+  child
+}
+
 .validate_scenario <- function(scenario) {
   if (!inherits(scenario, "scenario") || !is.list(scenario) ||
       is.null(scenario$financial_year) || is.null(scenario$adults)) {
@@ -132,6 +226,17 @@ new_adult <- function(taxable_income,
     stop("scenario$dependent_children must be supplied.", call. = FALSE)
   }
   .validate_dependent_children(scenario$dependent_children)
+  if (is.null(scenario$children)) {
+    stop("scenario$children must be supplied.", call. = FALSE)
+  }
+  .validate_children(scenario$children)
+  expected_dependent_children <- sum(vapply(
+    scenario$children, .is_mls_dependent_child, logical(1)
+  ))
+  if (scenario$dependent_children != expected_dependent_children) {
+    stop("scenario$dependent_children must equal the number of MLS-dependent children.",
+         call. = FALSE)
+  }
   if (is.null(scenario$appropriate_hospital_cover) ||
       !is.logical(scenario$appropriate_hospital_cover) ||
       length(scenario$appropriate_hospital_cover) != 1L ||
@@ -142,11 +247,15 @@ new_adult <- function(taxable_income,
   invisible(scenario)
 }
 
-new_scenario <- function(financial_year, adults, dependent_children = 0,
-                         appropriate_hospital_cover = FALSE) {
+new_scenario <- function(financial_year, adults,
+                         appropriate_hospital_cover = FALSE,
+                         children = list()) {
   .validate_financial_year(financial_year)
   .validate_adults(adults)
-  .validate_dependent_children(dependent_children)
+  .validate_children(children)
+  dependent_children <- sum(vapply(
+    children, .is_mls_dependent_child, logical(1)
+  ))
   if (!is.logical(appropriate_hospital_cover) ||
       length(appropriate_hospital_cover) != 1L ||
       is.na(appropriate_hospital_cover)) {
@@ -158,7 +267,8 @@ new_scenario <- function(financial_year, adults, dependent_children = 0,
       financial_year = financial_year,
       adults = adults,
       dependent_children = dependent_children,
-      appropriate_hospital_cover = appropriate_hospital_cover
+      appropriate_hospital_cover = appropriate_hospital_cover,
+      children = children
     ),
     class = "scenario"
   )
