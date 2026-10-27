@@ -1,9 +1,10 @@
 # Core individual tax calculations.
 #
-# Public tax-rule functions accept a single scenario object and calculate the
-# relevant individual rule for each adult in that scenario. Policy schedules
-# are data, maintained separately in R/policy_schedules_2026_27.R. See
-# docs/validation/tax-core-2026-27.md.
+# Public tax-rule functions accept a scenario object and calculate the relevant
+# rule for each adult. Individual rules are evaluated per adult; the Medicare
+# levy surcharge (MLS) additionally uses household income, dependent children,
+# and hospital-cover status. Policy parameters are in
+# R/policy_schedules_2026_27.R.
 # Amounts are returned without final tax-return rounding.
 
 .scenario_adult_incomes <- function(scenario) {
@@ -131,9 +132,72 @@ medicare_levy <- function(scenario) {
   .apply_individual_rule(scenario, "medicare_levy_individual")
 }
 
+# Income used to determine the applicable MLS threshold tier. These additions
+# affect the threshold test, but not all are included in the surcharge base.
+.adult_mls_income <- function(adult) {
+  adult$taxable_income +
+    adult$reportable_fringe_benefits +
+    adult$reportable_super_contributions +
+    adult$net_investment_loss +
+    adult$family_trust_distribution
+}
+
+# Calculate the annual MLS for each adult in a scenario.
+#
+# Scope: full-year household circumstances and cover status. The scenario's
+# cover flag means the taxpayer(s) and all relevant dependants had appropriate
+# hospital cover for the full year. Part-year cover, relationship changes,
+# exemptions, prescribed-person rules, and assessable FHSS released amounts
+# are not modelled. The surcharge base is taxable income plus reportable fringe
+# benefits; other MLS income adjustments determine the threshold tier only.
+medicare_levy_surcharge <- function(scenario) {
+  .validate_scenario(scenario)
+  policy <- .policy_schedules_for_year(scenario$financial_year)$medicare_levy_surcharge
+
+  incomes <- .scenario_adult_incomes(scenario)
+  names(incomes) <- paste0("adult_", seq_along(incomes))
+  zero <- stats::setNames(rep(0, length(incomes)), names(incomes))
+
+  if (scenario$appropriate_hospital_cover) {
+    return(zero)
+  }
+
+  adult_mls_income <- vapply(scenario$adults, .adult_mls_income, numeric(1))
+  family_mls_income <- sum(adult_mls_income)
+  uses_family_threshold <- length(scenario$adults) == 2L ||
+    scenario$dependent_children > 0
+
+  if (uses_family_threshold) {
+    thresholds <- policy$family_thresholds +
+      policy$extra_child_threshold * max(0, scenario$dependent_children - 1)
+  } else {
+    thresholds <- policy$single_thresholds
+  }
+
+  rate <- if (family_mls_income <= thresholds[1]) {
+    policy$rates[1]
+  } else if (family_mls_income <= thresholds[2]) {
+    policy$rates[2]
+  } else if (family_mls_income <= thresholds[3]) {
+    policy$rates[3]
+  } else {
+    policy$rates[4]
+  }
+
+  individual_threshold_income <- adult_mls_income > policy$individual_income_threshold
+  surcharge_base <- vapply(
+    scenario$adults,
+    function(adult) adult$taxable_income + adult$reportable_fringe_benefits,
+    numeric(1)
+  )
+  surcharge <- ifelse(individual_threshold_income, surcharge_base * rate, 0)
+  names(surcharge) <- names(incomes)
+  surcharge
+}
+
 # Component-level annual liability for each standard resident individual.
-# LITO does not reduce the Medicare levy. Rows correspond to adults in the
-# order supplied to new_scenario().
+# LITO does not reduce the Medicare levy. MLS is shown separately and is
+# included in total_tax_and_levies.
 individual_tax_components <- function(scenario) {
   incomes <- .scenario_adult_incomes(scenario)
   basic_tax <- resident_income_tax(scenario)
@@ -141,6 +205,7 @@ individual_tax_components <- function(scenario) {
   lito_applied <- pmin(basic_tax, lito_entitlement)
   income_tax_after_lito <- basic_tax - lito_applied
   levy <- medicare_levy(scenario)
+  mls <- medicare_levy_surcharge(scenario)
 
   data.frame(
     adult = seq_along(incomes),
@@ -151,6 +216,7 @@ individual_tax_components <- function(scenario) {
     lito_applied = unname(lito_applied),
     income_tax_after_lito = unname(income_tax_after_lito),
     medicare_levy = unname(levy),
-    total_tax_and_levies = unname(income_tax_after_lito + levy)
+    medicare_levy_surcharge = unname(mls),
+    total_tax_and_levies = unname(income_tax_after_lito + levy + mls)
   )
 }

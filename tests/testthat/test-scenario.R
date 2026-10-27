@@ -4,7 +4,16 @@ testthat::test_that("new_adult creates and validates an adult object", {
   adult <- new_adult(60000)
 
   testthat::expect_s3_class(adult, "adult")
-  testthat::expect_named(adult, "taxable_income")
+  testthat::expect_named(
+    adult,
+    c(
+      "taxable_income",
+      "reportable_fringe_benefits",
+      "reportable_super_contributions",
+      "net_investment_loss",
+      "family_trust_distribution"
+    )
+  )
   testthat::expect_identical(adult$taxable_income, 60000)
   testthat::expect_invisible(.validate_adult(adult))
 })
@@ -26,9 +35,19 @@ testthat::test_that("new_scenario creates a scenario with one adult", {
   x <- new_scenario("2026-27", list(new_adult(60000)))
 
   testthat::expect_s3_class(x, "scenario")
-  testthat::expect_named(x, c("financial_year", "adults"))
+  testthat::expect_named(
+    x,
+    c(
+      "financial_year",
+      "adults",
+      "dependent_children",
+      "appropriate_hospital_cover"
+    )
+  )
   testthat::expect_identical(x$financial_year, "2026-27")
   testthat::expect_identical(x$adults[[1]]$taxable_income, 60000)
+  testthat::expect_identical(x$dependent_children, 0)
+  testthat::expect_identical(x$appropriate_hospital_cover, FALSE)
 })
 
 testthat::test_that("new_scenario supports two adults", {
