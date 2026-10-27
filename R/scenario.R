@@ -57,7 +57,11 @@
     "reportable_fringe_benefits",
     "reportable_super_contributions",
     "net_investment_loss",
-    "family_trust_distribution"
+    "family_trust_distribution",
+    "adjusted_fringe_benefits",
+    "target_foreign_income",
+    "tax_free_pension_benefit",
+    "child_maintenance_expenditure"
   )
   if (!all(required_mls_fields %in% names(adult))) {
     stop(
@@ -78,13 +82,21 @@ new_adult <- function(taxable_income,
                       reportable_fringe_benefits = 0,
                       reportable_super_contributions = 0,
                       net_investment_loss = 0,
-                      family_trust_distribution = 0) {
+                      family_trust_distribution = 0,
+                      adjusted_fringe_benefits = 0,
+                      target_foreign_income = 0,
+                      tax_free_pension_benefit = 0,
+                      child_maintenance_expenditure = 0) {
   fields <- list(
     taxable_income = taxable_income,
     reportable_fringe_benefits = reportable_fringe_benefits,
     reportable_super_contributions = reportable_super_contributions,
     net_investment_loss = net_investment_loss,
-    family_trust_distribution = family_trust_distribution
+    family_trust_distribution = family_trust_distribution,
+    adjusted_fringe_benefits = adjusted_fringe_benefits,
+    target_foreign_income = target_foreign_income,
+    tax_free_pension_benefit = tax_free_pension_benefit,
+    child_maintenance_expenditure = child_maintenance_expenditure
   )
   for (name in names(fields)) {
     .validate_nonnegative_whole_amount(fields[[name]], name)
@@ -119,6 +131,51 @@ new_adult <- function(taxable_income,
   invisible(dependent_children)
 }
 
+# FTB-A models age-specific rates and requires secondary study for ages 16–19.
+.validate_ftb_children <- function(ftb_children) {
+  if (!is.list(ftb_children)) {
+    stop("ftb_children must be a list of FTB child objects.", call. = FALSE)
+  }
+  for (i in seq_along(ftb_children)) {
+    child <- ftb_children[[i]]
+    field <- sprintf("ftb_children[[%d]]", i)
+    if (!inherits(child, "ftb_child") || !is.list(child) ||
+        is.null(child$age) || is.null(child$secondary_school_student)) {
+      stop(sprintf("%s must be an FTB child object.", field), call. = FALSE)
+    }
+    if (!is.numeric(child$age) || length(child$age) != 1L ||
+        is.na(child$age) || !is.finite(child$age) ||
+        child$age < 0 || child$age > 19 || child$age != floor(child$age)) {
+      stop(sprintf("%s$age must be a whole number from 0 to 19.", field),
+           call. = FALSE)
+    }
+    if (!is.logical(child$secondary_school_student) ||
+        length(child$secondary_school_student) != 1L ||
+        is.na(child$secondary_school_student)) {
+      stop(sprintf("%s$secondary_school_student must be TRUE or FALSE.", field),
+           call. = FALSE)
+    }
+    if (child$age >= 16 && !child$secondary_school_student) {
+      stop(sprintf("%s aged 16–19 must be marked as a secondary school student.",
+                   field), call. = FALSE)
+    }
+    if (child$age < 16 && child$secondary_school_student) {
+      stop(sprintf("%s under age 16 must not use the secondary-school flag.",
+                   field), call. = FALSE)
+    }
+  }
+  invisible(ftb_children)
+}
+
+new_ftb_child <- function(age, secondary_school_student = FALSE) {
+  child <- structure(
+    list(age = age, secondary_school_student = secondary_school_student),
+    class = "ftb_child"
+  )
+  .validate_ftb_children(list(child))
+  child
+}
+
 .validate_scenario <- function(scenario) {
   if (!inherits(scenario, "scenario") || !is.list(scenario) ||
       is.null(scenario$financial_year) || is.null(scenario$adults)) {
@@ -132,6 +189,10 @@ new_adult <- function(taxable_income,
     stop("scenario$dependent_children must be supplied.", call. = FALSE)
   }
   .validate_dependent_children(scenario$dependent_children)
+  if (is.null(scenario$ftb_children)) {
+    stop("scenario$ftb_children must be supplied.", call. = FALSE)
+  }
+  .validate_ftb_children(scenario$ftb_children)
   if (is.null(scenario$appropriate_hospital_cover) ||
       !is.logical(scenario$appropriate_hospital_cover) ||
       length(scenario$appropriate_hospital_cover) != 1L ||
@@ -143,10 +204,12 @@ new_adult <- function(taxable_income,
 }
 
 new_scenario <- function(financial_year, adults, dependent_children = 0,
-                         appropriate_hospital_cover = FALSE) {
+                         appropriate_hospital_cover = FALSE,
+                         ftb_children = list()) {
   .validate_financial_year(financial_year)
   .validate_adults(adults)
   .validate_dependent_children(dependent_children)
+  .validate_ftb_children(ftb_children)
   if (!is.logical(appropriate_hospital_cover) ||
       length(appropriate_hospital_cover) != 1L ||
       is.na(appropriate_hospital_cover)) {
@@ -158,7 +221,8 @@ new_scenario <- function(financial_year, adults, dependent_children = 0,
       financial_year = financial_year,
       adults = adults,
       dependent_children = dependent_children,
-      appropriate_hospital_cover = appropriate_hospital_cover
+      appropriate_hospital_cover = appropriate_hospital_cover,
+      ftb_children = ftb_children
     ),
     class = "scenario"
   )
