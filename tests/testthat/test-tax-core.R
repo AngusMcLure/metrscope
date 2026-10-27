@@ -147,8 +147,11 @@ testthat::test_that("public tax functions require a supported financial year", {
   testthat::expect_equal(medicare_levy(new_scenario("2026-27", 50000)), 1000)
   testthat::expect_error(resident_income_tax(new_scenario("2025-26", 45000)),
                          "Unsupported financial_year")
-  testthat::expect_error(lito(new_scenario(NA_character_, 40000)),
-                         "financial_year must be")
+  bad_year <- structure(
+    list(financial_year = NA_character_, taxable_income = 40000),
+    class = "scenario"
+  )
+  testthat::expect_error(lito(bad_year), "financial_year must be")
   testthat::expect_error(individual_tax_components(new_scenario("2025-26", 40000)),
                          "Unsupported financial_year")
 })
