@@ -50,6 +50,15 @@ testthat::test_that("FTB-A method 2 reduces the base rate above the higher free 
                          "method_2")
 })
 
+testthat::test_that("larger families compare both rates above the higher income area", {
+  children <- list(new_ftb_child(5), new_ftb_child(6), new_ftb_child(7))
+  scenario <- make_ftb_scenario(123079, children)
+  components <- ftb_part_a_components(scenario)
+
+  testthat::expect_equal(components$ftb_part_a, 7628.20)
+  testthat::expect_equal(components$income_test_method, "method_1_comparison")
+})
+
 testthat::test_that("FTB-A combines both adults' adjusted taxable income", {
   children <- list(new_ftb_child(5), new_ftb_child(14))
   low_family_income <- make_ftb_scenario(40000, children, partner_income = 20000)
