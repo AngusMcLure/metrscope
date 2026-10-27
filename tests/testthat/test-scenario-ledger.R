@@ -8,7 +8,7 @@ scenario_ledger <- function(
     cash_effects = c(1000, -100),
     broader_effects = c(1000, -100),
     sources = c("illustrative", "illustrative"),
-    notes = c("", "")) {
+    notes = rep("", length(ids))) {
   data.frame(
     component_id = ids,
     label = labels,
