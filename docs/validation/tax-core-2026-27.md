@@ -26,7 +26,7 @@ Basic income tax before offsets is the piecewise sum of the resident marginal ra
 | (135{,}000 < y \leq 190{,}000) | (31{,}020+0.37(y-135{,}000)) |
 | (y > 190{,}000) | (51{,}370+0.45(y-190{,}000)) |
 
-LITO is calculated separately and applied only against basic income tax, with income tax after LITO floored at zero. The Medicare levy is then reported separately; unused LITO does not reduce it.
+LITO entitlement is calculated separately from the amount actually applied. The applied offset is the lesser of the entitlement and basic income tax; income tax after LITO is therefore never negative. The Medicare levy is reported separately and is not reduced by LITO. This distinction prevents unused non-refundable offset entitlement from being counted as cash or as a reduction in other liabilities.
 
 For the standard individual Medicare levy case:
 
