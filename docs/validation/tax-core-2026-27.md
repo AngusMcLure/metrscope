@@ -4,9 +4,9 @@
 
 The calculation engine models ordinary taxable income of an Australian resident individual, basic income tax, Low Income Tax Offset (LITO), the standard individual Medicare levy, and an initial Medicare levy surcharge (MLS) calculation.
 
-MLS is the first household-dependent rule. It uses the combined income for MLS purposes of one or two adults, the number of children, and a full-year household hospital-cover assumption. The scenario stores each adult's taxable income and MLS income-test adjustments, a list of children, and hospital-cover status; the dependent-child count is derived from the list.
+MLS is the first household-dependent rule. It uses the combined income for MLS purposes of one or two adults, the number of children, and a full-year household hospital-cover assumption. The scenario stores each adult's taxable income and MLS income-test adjustments, a list of child records, and hospital-cover status. Each child record contains age, full-time student status, study type, Australian tax residency, and whether the family maintains them. The MLS-dependent-child count is derived by applying the MLS rules to those facts; FTB-A independently applies its age/study rules to the same list.
 
-The current MLS implementation is intentionally limited to full-year household circumstances. It does not model part-year cover, changes in relationship status, exemptions or prescribed-person rules, adult dependants, or assessable First Home Super Saver released amounts. It assumes every child in the scenario's children list counts as an MLS-dependent child; the list's length supplies the dependent-child count. It is an analytical model, not a substitute for an ATO assessment.
+The current MLS implementation is intentionally limited to full-year household circumstances. It does not model part-year cover, changes in relationship status, exemptions or prescribed-person rules, adult dependants, or assessable First Home Super Saver released amounts. It counts a child for MLS if the child is an Australian tax resident, is maintained by the family, and is either under 21 or under 25 and a full-time student at secondary or tertiary level. This is a simplified representation of the ATO rules; special circumstances and changes during the year are not modelled. It is an analytical model, not a substitute for an ATO assessment.
 
 The code returns unrounded mathematical amounts. Tax-return rounding and other assessment rules must be specified before results are presented as official liability estimates.
 
@@ -16,7 +16,7 @@ These are intentional scope decisions for this model, not features currently pla
 
 - **Full-financial-year household circumstances:** hospital-cover status is represented by one Boolean for the whole financial year. Part-year cover and changes in cover during the year are not modelled.
 - **Stable relationship and household structure:** a scenario has one or two adults. Two adults are assumed to be spouses for MLS purposes; one adult with dependent children represents a single-parent family. Relationship changes and changes in household composition during the year are not modelled.
-- **Dependent children only:** the model takes a count of MLS-dependent children and applies the published additional-child threshold increment. It does not represent adult dependants or determine eligibility/dependency status from individual circumstances. Because the same list supports FTB-A, the model assumes every listed child also counts as dependent for MLS.
+- **Children represented individually:** each child has age, full-time study status, study type, Australian tax residency, and maintenance status. MLS and FTB-A apply separate rules to these shared facts. The current model does not handle changing circumstances during the year or every exception within either policy.
 - **No special MLS exemptions or prescribed-person cases:** the model does not assess exemptions or prescribed-person rules.
 - **Limited MLS income inputs:** the implemented income-test adjustments are reportable fringe benefits, reportable super contributions, net investment loss, and family trust distribution amounts. Assessable First Home Super Saver released amounts are not represented.
 - **Appropriate cover is a household-level assumption:** `appropriate_hospital_cover = TRUE` means the taxpayer(s) and all relevant dependants had appropriate private patient hospital cover for the entire financial year. The default `FALSE` assumes no appropriate full-year household cover; it does not infer cover from other inputs.
@@ -58,7 +58,7 @@ ATI = taxable income
     - child maintenance expenditure
 ```
 
-The scenario uses one `children` list for both FTB-A child details and the dependent-child count used for MLS. The count is derived from the list length, so this version assumes every listed child counts as dependent for MLS. Each child is represented by an age from 0 to 19; ages 16–19 must be marked as secondary-school students. This is a simplified eligibility representation, not a full test of all FTB child conditions.
+The scenario uses one `children` list for both policies, but does not assume every listed child qualifies for both. Each child records age (0–24), whether they are a full-time student, study type (`none`, `secondary`, `tertiary`, or `other`), Australian tax residency, and whether the family maintains them. MLS counts an Australian tax resident maintained by the family if they are under 21, or under 25 and studying full-time at secondary or tertiary level. FTB-A includes children under 16, and children aged 16–19 only when marked as full-time secondary students. These are simplified eligibility rules, not complete assessments of every policy condition.
 
 ### Income test and rates
 
@@ -76,7 +76,7 @@ The function `family_tax_benefit_part_a(scenario)` returns the annual family rat
 
 These are intentional scope decisions, not features currently planned for implementation:
 
-- The model assumes the listed children qualify as FTB children; it does not assess residence, care percentages/shared care, immunisation or health-check reductions, age-related exceptions, or other detailed eligibility conditions.
+- FTB-A applies only the simplified age/study rule described above. It does not assess care percentages/shared care, residence and care eligibility, immunisation or health-check reductions, income-support exclusions, study-load exceptions, or other detailed eligibility conditions.
 - The maintenance income test and maintenance action test are not modelled. Child maintenance expenditure is included only as an ATI adjustment; child support received or payable is not used to reduce the calculated FTB-A rate.
 - The FTB-A supplement and its separate $80,000 income test are excluded, as are Rent Assistance, Energy Supplement, newborn payments and multiple-birth allowances.
 - Income-support-payment exceptions to the FTB-A income test are not modelled.
