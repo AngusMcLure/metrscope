@@ -5,32 +5,32 @@ source(testthat::test_path("../../R/scenario.R"))
 source(testthat::test_path("../../R/tax_core.R"))
 
 testthat::test_that("resident tax brackets have the correct boundaries", {
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 18200)))), 0)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 18201)))), 0.15)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45000)))), 4020)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45001)))), 4020.30)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 135000)))), 31020)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 135001)))), 31020.37)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 190000)))), 51370)
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 190001)))), 51370.45)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 18200))))), 0)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 18201))))), 0.15)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45000))))), 4020)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45001))))), 4020.30)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 135000))))), 31020)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 135001))))), 31020.37)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 190000))))), 51370)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 190001))))), 51370.45)
 })
 
 testthat::test_that("LITO tapers and floors at zero", {
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 0)))), 700)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 37500)))), 700)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 37501)))), 699.95)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 45000)))), 325)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 45001)))), 324.985)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 66667)))), 0)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 70000)))), 0)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 0))))), 700)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 37500))))), 700)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 37501))))), 699.95)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 45000))))), 325)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 45001))))), 324.985)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 66667))))), 0)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 70000))))), 0)
 })
 
 testthat::test_that("Medicare levy threshold and phase-in boundaries are correct", {
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 28011)))), 0)
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 28012)))), 0.10)
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 35012)))), 700.10)
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 35013)))), 700.26)
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 50000)))), 1000)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 28011))))), 0)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 28012))))), 0.10)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 35012))))), 700.10)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 35013))))), 700.26)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 50000))))), 1000)
 })
 
 testthat::test_that("LITO reduces income tax but not the Medicare levy", {
@@ -142,9 +142,9 @@ testthat::test_that("piecewise schedule rejects malformed interval definitions",
 
 
 testthat::test_that("public tax functions require a supported financial year", {
-  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45000)))), 4020)
-  testthat::expect_equal(lito(new_scenario("2026-27", list(list(taxable_income = 40000)))), 575)
-  testthat::expect_equal(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 50000)))), 1000)
+  testthat::expect_equal(unname(resident_income_tax(new_scenario("2026-27", list(list(taxable_income = 45000))))), 4020)
+  testthat::expect_equal(unname(lito(new_scenario("2026-27", list(list(taxable_income = 40000))))), 575)
+  testthat::expect_equal(unname(medicare_levy(new_scenario("2026-27", list(list(taxable_income = 50000))))), 1000)
   testthat::expect_error(resident_income_tax(new_scenario("2025-26", list(list(taxable_income = 45000)))),
                          "Unsupported financial_year")
   bad_year <- structure(
