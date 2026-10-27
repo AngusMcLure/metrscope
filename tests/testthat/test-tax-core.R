@@ -131,3 +131,4 @@ testthat::test_that("piecewise schedule rejects malformed interval definitions",
     "non-negative"
   )
 })
+
