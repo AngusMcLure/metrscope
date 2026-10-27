@@ -7,22 +7,21 @@ testthat::test_that("single MLS thresholds and rates have correct boundaries", {
     new_scenario("2026-27", list(new_adult(income)))
   }
 
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(make_single(105000))),
-    0
-  )
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(make_single(105001))),
-    1050.01
-  )
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(make_single(123001))),
-    1537.5125
-  )
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(make_single(164001))),
-    2460.015
-  )
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_single(105000))), 0)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_single(105001))), 1050.01)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_single(123001))), 1537.5125)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_single(164001))), 2460.015)
+})
+
+testthat::test_that("family MLS thresholds and rates have correct boundaries", {
+  make_family <- function(income) {
+    new_scenario("2026-27", list(new_adult(income)), dependent_children = 1)
+  }
+
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_family(210000))), 0)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_family(210001))), 2100.01)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_family(246001))), 3075.0125)
+  testthat::expect_equal(unname(medicare_levy_surcharge(make_family(328001))), 4920.015)
 })
 
 testthat::test_that("partner income determines family tier but each adult has own surcharge base", {
@@ -31,10 +30,7 @@ testthat::test_that("partner income determines family tier but each adult has ow
     list(new_adult(150000), new_adult(70000))
   )
 
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(couple)),
-    c(1500, 700)
-  )
+  testthat::expect_equal(unname(medicare_levy_surcharge(couple)), c(1500, 700))
   components <- individual_tax_components(couple)
   testthat::expect_equal(components$medicare_levy_surcharge, c(1500, 700))
   testthat::expect_equal(
@@ -50,10 +46,7 @@ testthat::test_that("individual income threshold still applies within a high-inc
     list(new_adult(201000), new_adult(10000))
   )
 
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(couple)),
-    c(2010, 0)
-  )
+  testthat::expect_equal(unname(medicare_levy_surcharge(couple)), c(2010, 0))
 })
 
 testthat::test_that("dependent children increase family thresholds after the first child", {
@@ -78,10 +71,7 @@ testthat::test_that("MLS income adjustments determine the tier but not the surch
     list(new_adult(104000, reportable_super_contributions = 2000))
   )
 
-  testthat::expect_equal(
-    unname(medicare_levy_surcharge(scenario)),
-    1040
-  )
+  testthat::expect_equal(unname(medicare_levy_surcharge(scenario)), 1040)
 })
 
 testthat::test_that("appropriate full-year household hospital cover removes MLS", {
