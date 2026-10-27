@@ -246,11 +246,26 @@ medicare_levy_surcharge <- function(scenario) {
     reduction <- maximum_rate - rate
     method <- "method_1"
   } else {
-    reduction <- (family_ati - policy$higher_income_free_area) *
-      policy$method_2_taper
-    rate <- max(0, base_rate - reduction)
-    reduction <- base_rate - rate
-    method <- "method_2"
+    income_above_higher_area <- family_ati - policy$higher_income_free_area
+    method_1_rate <- max(
+      0,
+      maximum_rate -
+        (policy$higher_income_free_area - policy$income_free_area) *
+          policy$method_1_taper -
+        income_above_higher_area * policy$method_2_taper
+    )
+    method_2_rate <- max(
+      0,
+      base_rate - income_above_higher_area * policy$method_2_taper
+    )
+    rate <- max(method_1_rate, method_2_rate)
+    if (method_1_rate > method_2_rate) {
+      method <- "method_1_comparison"
+      reduction <- maximum_rate - rate
+    } else {
+      method <- "method_2"
+      reduction <- base_rate - rate
+    }
   }
 
   list(
