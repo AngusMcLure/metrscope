@@ -58,7 +58,7 @@ y_i + \text{reportable fringe benefits}_i +
 \text{family trust distribution amount}_i
 ]
 
-The family total is the sum of adult MLS incomes. A single adult without dependent children uses the single thresholds. A couple, or a single adult with dependent children, uses the family thresholds. The family thresholds increase by $1,500 for each dependent child after the first.
+The family total is the sum of adult MLS incomes. A single adult without dependent children uses the single thresholds. A couple, or a single adult with dependent children, uses the family thresholds. In the current scenario API, a scenario with two adults assumes they are spouses for MLS purposes; a single-parent scenario has one adult and a positive dependent-child count. The family thresholds increase by $1,500 for each dependent child after the first.
 
 The family total selects the rate tier: 0% up to the first threshold, 1% above the first threshold through the second, 1.25% above the second through the third, and 1.5% above the third. An adult is only charged where their own MLS income exceeds $28,011. The surcharge amount is the selected rate multiplied by that adult's taxable income plus reportable fringe benefits; reportable super contributions and net investment losses affect the threshold tier but are not included in this surcharge base.
 
