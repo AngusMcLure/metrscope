@@ -1,35 +1,34 @@
-# Validation specification: individual tax core, 2026–27
+# Validation specification: individual tax core and MLS, 2026–27
 
 ## Scope
 
-This is the first calculation slice for metrscope: ordinary taxable income of an Australian resident individual, basic income tax, Low Income Tax Offset (LITO), and the standard individual Medicare levy. It deliberately excludes Medicare levy surcharge (MLS), family-threshold Medicare levy reductions, SAPTO-related provisions, exemptions, other tax offsets, HELP repayments, and all transfer payments.
+The calculation engine models ordinary taxable income of an Australian resident individual, basic income tax, Low Income Tax Offset (LITO), the standard individual Medicare levy, and an initial Medicare levy surcharge (MLS) calculation.
 
-The code returns unrounded mathematical amounts. It is an analytical model, not a substitute for an ATO assessment; tax-return rounding and other assessment rules must be specified before the results are presented as official liability estimates.
+MLS is the first household-dependent rule. It uses the combined income for MLS purposes of one or two adults, the number of dependent children, and a full-year household hospital-cover assumption. The scenario stores each adult's taxable income and MLS income-test adjustments; children and hospital-cover status are separate household fields.
+
+The current MLS implementation is intentionally limited to full-year household circumstances. It does not model part-year cover, changes in relationship status, exemptions or prescribed-person rules, adult dependants, or assessable First Home Super Saver released amounts. It assumes the supplied dependent-child count is the number of MLS-dependent children. It is an analytical model, not a substitute for an ATO assessment.
+
+The code returns unrounded mathematical amounts. Tax-return rounding and other assessment rules must be specified before results are presented as official liability estimates.
 
 ## Official sources and parameters
 
 - [Income Tax Rates Act 1986 — compilation effective 1 July 2026, Schedule 7 Part I](https://www.legislation.gov.au/C2004A03348/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html): resident marginal rates for 2026–27 are 0% to $18,200, 15% over $18,200 to $45,000, 30% over $45,000 to $135,000, 37% over $135,000 to $190,000, and 45% above $190,000.
 - [ATO — Low income tax offset](https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/tax-offsets-and-rebates): maximum $700 to $37,500; taper of 5 cents per dollar from $37,500 to $45,000; then 1.5 cents per dollar from $45,000 to $66,667; nil thereafter. LITO is non-refundable and does not reduce the Medicare levy.
 - [Medicare Levy Act 1986 — compilation effective 1 July 2026](https://www.legislation.gov.au/C2004A03351/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html): standard individual low-income threshold $28,011 and phase-in limit $35,013; standard levy 2% above the phase-in limit. Between the threshold and phase-in limit, the levy is 10% of the excess over the threshold.
+- [Australian Government — private health insurance and the Medicare levy surcharge](https://www.privatehealth.gov.au/health_insurance/surcharges_incentives/medicare_levy.htm): for 2026–27, single thresholds are $105,000, $123,000 and $164,000; family thresholds are $210,000, $246,000 and $328,000. The family thresholds increase by $1,500 for each dependent child after the first. Surcharge rates are 0%, 1%, 1.25% and 1.5%.
+- [ATO — income for surcharge purposes](https://www.ato.gov.au/api/public/content/0-5f0fcd18-9557-451f-9f9b-11ce935ea237): MLS income testing includes taxable income, reportable fringe benefits, reportable super contributions, net investment losses, and amounts on which family trust distribution tax has been paid. Net investment losses comprise net financial investment loss and net rental property loss.
 
 ## Data-driven policy schedules
 
-The public functions `resident_income_tax(taxable_income, financial_year)`, `lito(taxable_income, financial_year)`, and `medicare_levy(taxable_income, financial_year)` select the schedule for the explicitly requested financial year. The current implementation supports `2026-27` only; unsupported years fail clearly rather than falling back to another year. The generic schedule evaluator is in `R/tax_core.R`, and the current-year policy parameters are stored in `R/policy_schedules_2026_27.R`. Each schedule is a table with:
+Public tax functions accept a scenario object. The current implementation supports `2026-27` only; unsupported years fail clearly rather than falling back to another year. The generic piecewise schedule evaluator is in `R/tax_core.R`, and policy parameters are stored in `R/policy_schedules_2026_27.R`.
 
-- `lower_bound`: inclusive start of the interval;
-- `upper_bound`: exclusive end of the interval;
-- `value_at_lower`: the rule amount at the start of the interval;
-- `slope`: marginal change in the amount per dollar of input.
-
-For an input (x), the evaluator returns `value_at_lower + slope * (x - lower_bound)` for the interval containing (x). Schedules start at zero, have contiguous intervals, and end at infinity. They can express progressive liabilities, flat amounts, phase-outs, and policy-specified discontinuities. The schedule metadata also records the financial year, input, units, and source URLs.
-
-The evaluator does not decide the policy meaning of a schedule. In particular, LITO entitlement is capped at zero and the amount applied is capped at income tax payable in the component calculation. This keeps the generic numerical mechanism separate from rule-specific eligibility and application logic. Adding a financial year should ordinarily require a new parameter schedule and an explicit supported-year entry, not another set of year-suffixed calculation functions.
+Income tax, LITO and the standard Medicare levy are represented as piecewise-linear schedules. Each row covers `[lower_bound, upper_bound)` and evaluates to `value_at_lower + slope * (input - lower_bound)`. MLS is not a single individual piecewise schedule: its tier depends on household income and composition, so the thresholds and rates are stored separately and applied by explicit calculation logic.
 
 ## Component calculations
 
-Let (y) be taxable income.
+Let (y_i) be adult (i)'s taxable income.
 
-Basic income tax before offsets is the piecewise sum of the resident marginal rates. In compact form:
+Basic income tax before offsets is the piecewise sum of resident marginal rates:
 
 | Taxable income band | Basic income tax |
 |---|---|
@@ -39,7 +38,7 @@ Basic income tax before offsets is the piecewise sum of the resident marginal ra
 | (135{,}000 < y \leq 190{,}000) | (31{,}020+0.37(y-135{,}000)) |
 | (y > 190{,}000) | (51{,}370+0.45(y-190{,}000)) |
 
-LITO entitlement is calculated separately from the amount actually applied. The applied offset is the lesser of the entitlement and basic income tax; income tax after LITO is therefore never negative. The Medicare levy is reported separately and is not reduced by LITO. This distinction prevents unused non-refundable offset entitlement from being counted as cash or as a reduction in other liabilities.
+LITO entitlement is calculated separately from the amount actually applied. The applied offset is the lesser of the entitlement and basic income tax; income tax after LITO is therefore never negative. LITO does not reduce the Medicare levy.
 
 For the standard individual Medicare levy case:
 
@@ -47,33 +46,58 @@ For the standard individual Medicare levy case:
 - (28{,}011 < y < 35{,}013): levy is (0.10(y-28{,}011)).
 - (y \geq 35{,}013): levy is (0.02y).
 
-The implementation should keep these components separate so that later household and transfer rules can be added without hiding where the change comes from.
+### Medicare levy surcharge
+
+For each adult, the implementation calculates income for MLS threshold purposes as:
+
+[
+\text{MLS income}_i =
+y_i + \text{reportable fringe benefits}_i +
+\text{reportable super contributions}_i +
+\text{net investment loss}_i +
+\text{family trust distribution amount}_i
+]
+
+The family total is the sum of adult MLS incomes. A single adult without dependent children uses the single thresholds. A couple, or a single adult with dependent children, uses the family thresholds. The family thresholds increase by $1,500 for each dependent child after the first.
+
+The family total selects the rate tier: 0% up to the first threshold, 1% above the first threshold through the second, 1.25% above the second through the third, and 1.5% above the third. An adult is only charged where their own MLS income exceeds $28,011. The surcharge amount is the selected rate multiplied by that adult's taxable income plus reportable fringe benefits; reportable super contributions and net investment losses affect the threshold tier but are not included in this surcharge base.
+
+The scenario field `appropriate_hospital_cover` means that the taxpayer(s) and all relevant dependants had appropriate private patient hospital cover for the entire financial year. When it is `TRUE`, MLS is zero for all adults. It defaults to `FALSE`, which means the model assumes no appropriate full-year household cover unless specified otherwise.
+
+MLS is returned separately as `medicare_levy_surcharge` in `individual_tax_components()`, and included in `total_tax_and_levies`.
 
 ## Worked examples
 
-Amounts below are unrounded model outputs, not tax-return assessments. They assume standard LITO eligibility and the standard individual Medicare levy case.
+Amounts are unrounded model outputs, not tax-return assessments. The examples assume standard LITO eligibility, the standard individual Medicare levy case, no relevant MLS income adjustments, no appropriate hospital cover, and no dependants unless stated.
 
-| Taxable income | Basic income tax | LITO | Income tax after LITO | Medicare levy | Total tax and levy |
-|---:|---:|---:|---:|---:|---:|
-| $26,000 | $1,170.00 | $700.00 | $470.00 | $0.00 | $470.00 |
-| $30,000 | $1,770.00 | $700.00 | $1,070.00 | $198.90 | $1,268.90 |
-| $60,000 | $8,520.00 | $100.00 | $8,420.00 | $1,200.00 | $9,620.00 |
-| $100,000 | $20,520.00 | $0.00 | $20,520.00 | $2,000.00 | $22,520.00 |
+| Scenario | MLS income | MLS rate | MLS |
+|---|---:|---:|---:|
+| Single adult, taxable income $105,000 | $105,000 | 0% | $0 |
+| Single adult, taxable income $105,001 | $105,001 | 1% | $1,050.01 |
+| Couple, taxable incomes $150,000 and $70,000 | $220,000 family total | 1% | $1,500 and $700 respectively |
+| Single parent, taxable income $211,000, one dependent child | $211,000 | 1% | $2,110 |
+| Same single parent with two dependent children | $211,000 | 0% | $0 |
+
+For the couple example, the household total selects the tier, but the surcharge is calculated separately for each adult. For the single-parent examples, the family threshold is $210,000 with one child and $211,500 with two children.
 
 ## Boundary and validation cases
 
-The test suite covers generic schedule interval evaluation and validation as well as tax-specific calculations. The tax-specific cases include:
-- values at and one dollar either side of each resident tax bracket boundary;
-- LITO at $37,500, $45,000 and $66,667, including its non-refundable application;
-- Medicare levy at $28,011 and around the $35,013 phase-in limit;
-- component separation and arithmetic for worked examples;
-- invalid, missing, non-finite, non-scalar and fractional taxable-income inputs.
+The test suite covers:
+- resident tax bracket boundaries and LITO taper points;
+- Medicare levy threshold and phase-in limit;
+- MLS single and family tier boundaries;
+- combined partner income selecting a family tier;
+- the individual MLS income threshold within a high-income household;
+- the additional-child threshold increment;
+- MLS income adjustments affecting tier selection without being included in the surcharge base;
+- full-year appropriate hospital cover;
+- invalid income and household inputs, and unsupported financial years.
 
-At $35,012 the phase-in formula gives $700.10; at $35,013 the 2% formula gives $700.26. This small jump follows the statutory threshold/phase-in definitions and should be preserved rather than smoothed away.
+At $35,012 the standard Medicare levy phase-in formula gives $700.10; at $35,013 the 2% formula gives $700.26. This small jump follows the statutory threshold/phase-in definitions and is preserved rather than smoothed away.
 
-## Not yet validated
+## Not yet independently validated
 
-- The automated suite provides formula-level unit tests; it is not an independent validation against an official 2026–27 assessment.
-- These are formula-level unit tests, not independent validation against an official 2026–27 assessment.
-- Final tax-return rounding, the full family Medicare levy calculation, MLS, SAPTO, exemptions and other offsets remain outside this slice.
-- No METR or benefit interactions are implemented yet.
+- Automated tests are formula-level tests; they are not independent validation against an official 2026–27 assessment.
+- The initial MLS model omits part-year cover, relationship changes, exemptions, prescribed-person rules, adult dependants, and First Home Super Saver released amounts.
+- Family-threshold Medicare levy reductions, SAPTO, other offsets, HELP repayments, family payments, and other transfer payments remain outside the current scope.
+- No baseline-versus-changed-scenario METR calculation or benefit interactions are implemented yet.
