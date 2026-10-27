@@ -104,15 +104,14 @@ evaluate_piecewise_schedule <- function(input, schedule) {
   evaluate_piecewise_schedule(input, policy_rule$schedule)
 }
 
-.apply_individual_rule <- function(scenario, schedule_name, floor_at_zero = FALSE) {
+.apply_individual_rule <- function(scenario, schedule_name) {
   incomes <- .scenario_adult_incomes(scenario)
   values <- vapply(
     incomes,
     function(income) {
-      value <- .policy_schedule_value(
+      .policy_schedule_value(
         income, schedule_name, scenario$financial_year
       )
-      if (floor_at_zero) max(0, value) else value
     },
     numeric(1)
   )
@@ -125,7 +124,7 @@ resident_income_tax <- function(scenario) {
 }
 
 lito <- function(scenario) {
-  .apply_individual_rule(scenario, "lito", floor_at_zero = TRUE)
+  .apply_individual_rule(scenario, "lito")
 }
 
 medicare_levy <- function(scenario) {
