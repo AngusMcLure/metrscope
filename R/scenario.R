@@ -2,8 +2,8 @@
 #
 # Adult objects contain taxable income and income-test adjustments used by
 # the Medicare levy surcharge (MLS) and Family Tax Benefit Part A (FTB-A).
-# MLS dependent-child count, FTB-A child details, and hospital-cover status
-# are separate household fields because each rule uses different definitions.
+# Children are represented individually; the scenario derives the dependent-child
+# count used by MLS from this list. Hospital-cover status is a household field.
 # The constructors do not validate whether tax rules exist for the requested
 # financial year; the calculation functions are responsible for that check.
 
@@ -133,14 +133,14 @@ new_adult <- function(taxable_income,
 }
 
 # FTB-A models age-specific rates and requires secondary study for ages 16–19.
-.validate_ftb_children <- function(ftb_children) {
-  if (!is.list(ftb_children)) {
-    stop("ftb_children must be a list of FTB child objects.", call. = FALSE)
+.validate_children <- function(children) {
+  if (!is.list(children)) {
+    stop("children must be a list of FTB child objects.", call. = FALSE)
   }
-  for (i in seq_along(ftb_children)) {
-    child <- ftb_children[[i]]
-    field <- sprintf("ftb_children[[%d]]", i)
-    if (!inherits(child, "ftb_child") || !is.list(child) ||
+  for (i in seq_along(children)) {
+    child <- children[[i]]
+    field <- sprintf("children[[%d]]", i)
+    if (!inherits(child, "child") || !is.list(child) ||
         is.null(child$age) || is.null(child$secondary_school_student)) {
       stop(sprintf("%s must be an FTB child object.", field), call. = FALSE)
     }
@@ -165,15 +165,15 @@ new_adult <- function(taxable_income,
                    field), call. = FALSE)
     }
   }
-  invisible(ftb_children)
+  invisible(children)
 }
 
-new_ftb_child <- function(age, secondary_school_student = FALSE) {
+new_child <- function(age, secondary_school_student = FALSE) {
   child <- structure(
     list(age = age, secondary_school_student = secondary_school_student),
-    class = "ftb_child"
+    class = "child"
   )
-  .validate_ftb_children(list(child))
+  .validate_children(list(child))
   child
 }
 
@@ -190,10 +190,14 @@ new_ftb_child <- function(age, secondary_school_student = FALSE) {
     stop("scenario$dependent_children must be supplied.", call. = FALSE)
   }
   .validate_dependent_children(scenario$dependent_children)
-  if (is.null(scenario$ftb_children)) {
-    stop("scenario$ftb_children must be supplied.", call. = FALSE)
+  if (is.null(scenario$children)) {
+    stop("scenario$children must be supplied.", call. = FALSE)
   }
-  .validate_ftb_children(scenario$ftb_children)
+  .validate_children(scenario$children)
+  if (scenario$dependent_children != length(scenario$children)) {
+    stop("scenario$dependent_children must equal the number of children.",
+         call. = FALSE)
+  }
   if (is.null(scenario$appropriate_hospital_cover) ||
       !is.logical(scenario$appropriate_hospital_cover) ||
       length(scenario$appropriate_hospital_cover) != 1L ||
@@ -204,13 +208,13 @@ new_ftb_child <- function(age, secondary_school_student = FALSE) {
   invisible(scenario)
 }
 
-new_scenario <- function(financial_year, adults, dependent_children = 0,
+new_scenario <- function(financial_year, adults,
                          appropriate_hospital_cover = FALSE,
-                         ftb_children = list()) {
+                         children = list()) {
   .validate_financial_year(financial_year)
   .validate_adults(adults)
-  .validate_dependent_children(dependent_children)
-  .validate_ftb_children(ftb_children)
+  .validate_children(children)
+  dependent_children <- length(children)
   if (!is.logical(appropriate_hospital_cover) ||
       length(appropriate_hospital_cover) != 1L ||
       is.na(appropriate_hospital_cover)) {
@@ -223,7 +227,7 @@ new_scenario <- function(financial_year, adults, dependent_children = 0,
       adults = adults,
       dependent_children = dependent_children,
       appropriate_hospital_cover = appropriate_hospital_cover,
-      ftb_children = ftb_children
+      children = children
     ),
     class = "scenario"
   )
