@@ -40,6 +40,56 @@ Public tax functions accept a scenario object. The current implementation suppor
 
 Income tax, LITO and the standard Medicare levy are represented as piecewise-linear schedules. Each row covers `[lower_bound, upper_bound)` and evaluates to `value_at_lower + slope * (input - lower_bound)`. MLS is not a single individual piecewise schedule: its tier depends on household income and composition, so the thresholds and rates are stored separately and applied by explicit calculation logic.
 
+## Family Tax Benefit Part A
+
+The initial FTB-A implementation calculates an annual rate after applying the family adjusted-taxable-income test, but **before** the maintenance income test, FTB-A supplement, Rent Assistance, Energy Supplement, and other eligibility-related adjustments. It is intended for marginal-effect exploration, not to reproduce a complete Centrelink assessment.
+
+### Inputs and adjusted taxable income
+
+Each adult contributes their adjusted taxable income (ATI) to the family total. The implemented ATI is:
+
+```text
+ATI = taxable income
+    + adjusted fringe benefits total
+    + target foreign income
+    + total net investment loss
+    + tax-free pension or benefit amounts
+    + reportable superannuation contributions
+    - child maintenance expenditure
+```
+
+The scenario accepts FTB children separately from the dependent-child count used for MLS. Each FTB child is represented by an age from 0 to 19; ages 16–19 must be marked as secondary-school students. This is a simplified eligibility representation, not a full test of all FTB child conditions.
+
+### Income test and rates
+
+The 2026–27 parameters are stored in `R/policy_schedules_2026_27.R` and sourced from Services Australia and the Department of Social Services Family Assistance Guide:
+
+- The income-free area is $69,131.
+- The higher income-free area is $123,078.
+- Below or at the higher income-free area, Method 1 reduces the sum of maximum age-specific child rates by 20 cents for each dollar of family ATI above $69,131, but not below the base rate.
+- Above $123,078, Method 2 reduces the sum of base rates by 30 cents for each dollar of family ATI above $123,078, down to zero.
+- The maximum annual rate used is $6,139.30 per child aged under 13 and $7,989.85 per child aged 13–19 who meets the model's secondary-school condition. The base rate is $1,971 per eligible child.
+
+The function `family_tax_benefit_part_a(scenario)` returns the annual family rate after this income test. `ftb_part_a_components(scenario)` exposes family ATI, maximum rate, base rate, selected method, income-test reduction, and resulting FTB-A rate for itemised downstream calculations.
+
+### Deliberate scope assumptions and exclusions
+
+These are intentional scope decisions, not features currently planned for implementation:
+
+- The model assumes the listed children qualify as FTB children; it does not assess residence, care percentages/shared care, immunisation or health-check reductions, age-related exceptions, or other detailed eligibility conditions.
+- The maintenance income test and maintenance action test are not modelled. Child maintenance expenditure is included only as an ATI adjustment; child support received or payable is not used to reduce the calculated FTB-A rate.
+- The FTB-A supplement and its separate $80,000 income test are excluded, as are Rent Assistance, Energy Supplement, newborn payments and multiple-birth allowances.
+- Income-support-payment exceptions to the FTB-A income test are not modelled.
+- The calculation is annual and does not model changes in care, relationship status, or income estimates during the year.
+- ATI is calculated from the fields represented in this model. Other legal or personal circumstances affecting eligibility or ATI may not be represented.
+- The output is an unrounded formula-level annual rate, not a complete Services Australia assessment.
+
+Official references:
+- [Services Australia — Income test for FTB Part A](https://www.servicesaustralia.gov.au/income-test-for-family-tax-benefit-part?context=22151)
+- [DSS Family Assistance Guide — Current FTB rates and income-test amounts](https://guides.dss.gov.au/family-assistance-guide/3/1/1/20)
+- [DSS Family Assistance Guide — Adjusted taxable income](https://guides.dss.gov.au/family-assistance-guide/1/1/a/20)
+- [DSS Family Assistance Guide — Calculating a rate of FTB](https://guides.dss.gov.au/family-assistance-guide/3/1/1/10)
+
 ## Component calculations
 
 Let (y_i) be adult (i)'s taxable income.
@@ -114,6 +164,6 @@ At $35,012 the standard Medicare levy phase-in formula gives $700.10; at $35,013
 ## Not yet independently validated
 
 - Automated tests are formula-level tests; they are not independent validation against an official 2026–27 assessment.
-- The initial MLS model omits part-year cover, relationship changes, exemptions, prescribed-person rules, adult dependants, and First Home Super Saver released amounts.
-- Family-threshold Medicare levy reductions, SAPTO, other offsets, HELP repayments, family payments, and other transfer payments remain outside the current scope.
+- The initial MLS model omits part-year cover, relationship changes, exemptions, prescribed-person rules, adult dependants, and First Home Super Saver released amounts. The initial FTB-A model excludes maintenance tests, supplements, shared-care and detailed eligibility rules as described above.
+- Family-threshold Medicare levy reductions, SAPTO, other offsets, HELP repayments, FTB-A maintenance tests and supplements, Rent Assistance, childcare and housing support, and other transfer-payment interactions remain outside the current scope.
 - No baseline-versus-changed-scenario METR calculation or benefit interactions are implemented yet.
