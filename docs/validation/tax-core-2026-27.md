@@ -4,9 +4,9 @@
 
 The calculation engine models ordinary taxable income of an Australian resident individual, basic income tax, Low Income Tax Offset (LITO), the standard individual Medicare levy, and an initial Medicare levy surcharge (MLS) calculation.
 
-MLS is the first household-dependent rule. It uses the combined income for MLS purposes of one or two adults, the number of dependent children, and a full-year household hospital-cover assumption. The scenario stores each adult's taxable income and MLS income-test adjustments; children and hospital-cover status are separate household fields.
+MLS is the first household-dependent rule. It uses the combined income for MLS purposes of one or two adults, the number of children, and a full-year household hospital-cover assumption. The scenario stores each adult's taxable income and MLS income-test adjustments, a list of children, and hospital-cover status; the dependent-child count is derived from the list.
 
-The current MLS implementation is intentionally limited to full-year household circumstances. It does not model part-year cover, changes in relationship status, exemptions or prescribed-person rules, adult dependants, or assessable First Home Super Saver released amounts. It assumes the supplied dependent-child count is the number of MLS-dependent children. It is an analytical model, not a substitute for an ATO assessment.
+The current MLS implementation is intentionally limited to full-year household circumstances. It does not model part-year cover, changes in relationship status, exemptions or prescribed-person rules, adult dependants, or assessable First Home Super Saver released amounts. It assumes every child in the scenario's children list counts as an MLS-dependent child; the list's length supplies the dependent-child count. It is an analytical model, not a substitute for an ATO assessment.
 
 The code returns unrounded mathematical amounts. Tax-return rounding and other assessment rules must be specified before results are presented as official liability estimates.
 
@@ -16,7 +16,7 @@ These are intentional scope decisions for this model, not features currently pla
 
 - **Full-financial-year household circumstances:** hospital-cover status is represented by one Boolean for the whole financial year. Part-year cover and changes in cover during the year are not modelled.
 - **Stable relationship and household structure:** a scenario has one or two adults. Two adults are assumed to be spouses for MLS purposes; one adult with dependent children represents a single-parent family. Relationship changes and changes in household composition during the year are not modelled.
-- **Dependent children only:** the model takes a count of MLS-dependent children and applies the published additional-child threshold increment. It does not represent adult dependants or determine eligibility/dependency status from individual circumstances.
+- **Dependent children only:** the model takes a count of MLS-dependent children and applies the published additional-child threshold increment. It does not represent adult dependants or determine eligibility/dependency status from individual circumstances. Because the same list supports FTB-A, the model assumes every listed child also counts as dependent for MLS.
 - **No special MLS exemptions or prescribed-person cases:** the model does not assess exemptions or prescribed-person rules.
 - **Limited MLS income inputs:** the implemented income-test adjustments are reportable fringe benefits, reportable super contributions, net investment loss, and family trust distribution amounts. Assessable First Home Super Saver released amounts are not represented.
 - **Appropriate cover is a household-level assumption:** `appropriate_hospital_cover = TRUE` means the taxpayer(s) and all relevant dependants had appropriate private patient hospital cover for the entire financial year. The default `FALSE` assumes no appropriate full-year household cover; it does not infer cover from other inputs.
@@ -58,7 +58,7 @@ ATI = taxable income
     - child maintenance expenditure
 ```
 
-The scenario accepts FTB children separately from the dependent-child count used for MLS. Each FTB child is represented by an age from 0 to 19; ages 16–19 must be marked as secondary-school students. This is a simplified eligibility representation, not a full test of all FTB child conditions.
+The scenario uses one `children` list for both FTB-A child details and the dependent-child count used for MLS. The count is derived from the list length, so this version assumes every listed child counts as dependent for MLS. Each child is represented by an age from 0 to 19; ages 16–19 must be marked as secondary-school students. This is a simplified eligibility representation, not a full test of all FTB child conditions.
 
 ### Income test and rates
 
