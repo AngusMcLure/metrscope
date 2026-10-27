@@ -138,3 +138,21 @@ These are starting points, not a complete or pre-validated source inventory. Sel
 - **Important eligibility assumptions or exceptions:** Not a universal payment for all renters; qualifying payment, accommodation/rent type, household composition and sharer status matter
 - **Implementation status:** assessed
 - **Validation evidence or notes:** Current live rates need to be snapshotted and checked against the applicable effective date before implementation.
+
+
+## Sources used by the initial executable tax calculation
+
+### 2026–27 resident individual tax, LITO and standard Medicare levy
+- **Responsible agency / publisher:** Federal Register of Legislation; Australian Taxation Office
+- **URLs:**
+  - https://www.legislation.gov.au/C2004A03348/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html
+  - https://www.legislation.gov.au/C2004A03351/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html
+  - https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/tax-offsets-and-rebates
+- **Source type:** legislation and official guidance
+- **Topic:** individual income tax / offset / levy
+- **Applicable financial year or effective dates:** 2026–27; legislation compilations effective 1 July 2026
+- **Date checked:** 2026-10-27
+- **Rules or calculations supported:** resident tax brackets, LITO phase-out and standard individual Medicare levy low-income phase-in
+- **Important eligibility assumptions or exceptions:** Ordinary resident taxable income; assumes the standard individual Medicare levy threshold and does not implement family thresholds, SAPTO, levy exemptions, Medicare levy surcharge, other offsets, HELP repayments or benefits
+- **Implementation status:** implemented
+- **Validation evidence or notes:** R functions and testthat tests added in R/income-tax.R and tests/testthat/test-income-tax.R. R/Rscript was unavailable in the implementation environment, so tests were not run. Worked examples and scope are documented in docs/validation.md; independent validation against ATO examples remains outstanding.
