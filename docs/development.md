@@ -9,7 +9,7 @@ These guidelines establish the default architecture and workflow for `metrscope`
 - Prefer base R for straightforward operations. The standard packages `base`, `datasets`, `graphics`, `grDevices`, `methods`, `stats`, and `utils` are available without adding project dependencies.
 - The initial approved package set is `tidyverse` and `shiny`. Prefer individual tidyverse packages where appropriate; using the `tidyverse` meta-package is not required just to use one component. Ask before adding other direct dependencies, and explain why the dependency is needed and what simpler alternatives were considered.
 - When project metadata and dependency management are established, record direct dependencies there and use `renv` to lock reproducible package versions. Do not hand-edit a lockfile as a substitute for running the relevant `renv` commands.
-- Use GitHub Actions for repeatable automated checks once the package scaffold and check commands are in place.
+- Use GitHub Actions for repeatable automated checks. The initial workflow runs the existing `testthat` suite directly with `Rscript`, without requiring package metadata; add package-level `R CMD check` once the package scaffold and metadata are established.
 
 ## Architecture and folder layout
 
@@ -60,7 +60,7 @@ This is the intended direction, not a requirement to create every file or direct
 - Cover representative cases, boundary values around thresholds and eligibility changes, invalid inputs, and interactions between relevant tax and benefit rules.
 - Where feasible, compare results with authoritative worked examples or independent calculations, and document any differences in assumptions or rounding.
 - Test the calculation engine independently of Shiny. Add app-level tests only where they protect meaningful input, integration, or output behaviour.
-- Run the relevant tests and available package checks before opening a PR. Report what ran, what passed or failed, and anything not run; never imply a check ran if it did not.
+- Run the relevant tests and available package checks before opening a PR. The local test command for the current source-based suite is `Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'` after installing `testthat`. The GitHub Actions workflow runs this command on pull requests and pushes to `main`. Report what ran, what passed or failed, and anything not run; never imply a check ran if it did not.
 
 ## Incremental development workflow
 
