@@ -1,8 +1,9 @@
 # Minimal S3 adult and scenario objects.
 #
 # Adult objects contain taxable income and income-test adjustments used by
-# the Medicare levy surcharge (MLS). Children and cover status are household
-# fields because MLS thresholds and cover requirements operate at that level.
+# the Medicare levy surcharge (MLS) and Family Tax Benefit Part A (FTB-A).
+# MLS dependent-child count, FTB-A child details, and hospital-cover status
+# are separate household fields because each rule uses different definitions.
 # The constructors do not validate whether tax rules exist for the requested
 # financial year; the calculation functions are responsible for that check.
 
@@ -65,7 +66,7 @@
   )
   if (!all(required_mls_fields %in% names(adult))) {
     stop(
-      sprintf("%s must include all required MLS income fields.", field),
+      sprintf("%s must include all required income fields.", field),
       call. = FALSE
     )
   }
