@@ -132,7 +132,7 @@ new_adult <- function(taxable_income,
   invisible(dependent_children)
 }
 
-# FTB-A models age-specific rates and requires secondary study for ages 16–19.
+# Child facts are shared across policies; each policy applies its own rules.
 .validate_children <- function(children) {
   if (!is.list(children)) {
     stop("children must be a list of child objects.", call. = FALSE)
@@ -140,37 +140,73 @@ new_adult <- function(taxable_income,
   for (i in seq_along(children)) {
     child <- children[[i]]
     field <- sprintf("children[[%d]]", i)
+    required <- c("age", "full_time_student", "study_type",
+                  "australian_resident", "maintained_by_family")
     if (!inherits(child, "child") || !is.list(child) ||
-        is.null(child$age) || is.null(child$secondary_school_student)) {
-      stop(sprintf("%s must be a child object.", field), call. = FALSE)
+        !all(required %in% names(child))) {
+      stop(sprintf("%s must be a child object with all required fields.", field),
+           call. = FALSE)
     }
     if (!is.numeric(child$age) || length(child$age) != 1L ||
         is.na(child$age) || !is.finite(child$age) ||
-        child$age < 0 || child$age > 19 || child$age != floor(child$age)) {
-      stop(sprintf("%s$age must be a whole number from 0 to 19.", field),
+        child$age < 0 || child$age > 24 || child$age != floor(child$age)) {
+      stop(sprintf("%s$age must be a whole number from 0 to 24.", field),
            call. = FALSE)
     }
-    if (!is.logical(child$secondary_school_student) ||
-        length(child$secondary_school_student) != 1L ||
-        is.na(child$secondary_school_student)) {
-      stop(sprintf("%s$secondary_school_student must be TRUE or FALSE.", field),
+    if (!is.logical(child$full_time_student) ||
+        length(child$full_time_student) != 1L ||
+        is.na(child$full_time_student)) {
+      stop(sprintf("%s$full_time_student must be TRUE or FALSE.", field),
            call. = FALSE)
     }
-    if (child$age >= 16 && !child$secondary_school_student) {
-      stop(sprintf("%s aged 16–19 must be marked as a secondary school student.",
-                   field), call. = FALSE)
+    if (!is.character(child$study_type) || length(child$study_type) != 1L ||
+        is.na(child$study_type) ||
+        !child$study_type %in% c("none", "secondary", "tertiary", "other")) {
+      stop(sprintf(
+        "%s$study_type must be one of 'none', 'secondary', 'tertiary', or 'other'.",
+        field
+      ), call. = FALSE)
     }
-    if (child$age < 16 && child$secondary_school_student) {
-      stop(sprintf("%s under age 16 must not use the secondary-school flag.",
-                   field), call. = FALSE)
+    if (child$full_time_student && child$study_type == "none") {
+      stop(sprintf("%s$study_type cannot be 'none' for a full-time student.", field),
+           call. = FALSE)
+    }
+    for (name in c("australian_resident", "maintained_by_family")) {
+      value <- child[[name]]
+      if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+        stop(sprintf("%s$%s must be TRUE or FALSE.", field, name), call. = FALSE)
+      }
     }
   }
   invisible(children)
 }
 
-new_child <- function(age, secondary_school_student = FALSE) {
+# MLS and FTB-A use different eligibility rules for the same child facts.
+.is_mls_dependent_child <- function(child) {
+  isTRUE(child$australian_resident) &&
+    isTRUE(child$maintained_by_family) &&
+    (child$age < 21 ||
+       (child$age < 25 && isTRUE(child$full_time_student) &&
+          child$study_type %in% c("secondary", "tertiary")))
+}
+
+.is_ftb_a_child <- function(child) {
+  child$age < 16 ||
+    (child$age <= 19 && isTRUE(child$full_time_student) &&
+       identical(child$study_type, "secondary"))
+}
+
+new_child <- function(age, full_time_student = FALSE, study_type = "none",
+                      australian_resident = TRUE,
+                      maintained_by_family = TRUE) {
   child <- structure(
-    list(age = age, secondary_school_student = secondary_school_student),
+    list(
+      age = age,
+      full_time_student = full_time_student,
+      study_type = study_type,
+      australian_resident = australian_resident,
+      maintained_by_family = maintained_by_family
+    ),
     class = "child"
   )
   .validate_children(list(child))
@@ -194,8 +230,11 @@ new_child <- function(age, secondary_school_student = FALSE) {
     stop("scenario$children must be supplied.", call. = FALSE)
   }
   .validate_children(scenario$children)
-  if (scenario$dependent_children != length(scenario$children)) {
-    stop("scenario$dependent_children must equal the number of children.",
+  expected_dependent_children <- sum(vapply(
+    scenario$children, .is_mls_dependent_child, logical(1)
+  ))
+  if (scenario$dependent_children != expected_dependent_children) {
+    stop("scenario$dependent_children must equal the number of MLS-dependent children.",
          call. = FALSE)
   }
   if (is.null(scenario$appropriate_hospital_cover) ||
@@ -214,7 +253,9 @@ new_scenario <- function(financial_year, adults,
   .validate_financial_year(financial_year)
   .validate_adults(adults)
   .validate_children(children)
-  dependent_children <- length(children)
+  dependent_children <- sum(vapply(
+    children, .is_mls_dependent_child, logical(1)
+  ))
   if (!is.logical(appropriate_hospital_cover) ||
       length(appropriate_hospital_cover) != 1L ||
       is.na(appropriate_hospital_cover)) {
