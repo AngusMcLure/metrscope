@@ -131,3 +131,9 @@ testthat::test_that("piecewise schedule rejects malformed interval definitions",
     "non-negative"
   )
 })
+
+
+testthat::test_that("deliberate CI failure probe is detected", {
+  # Intentional failure: the implemented value is 4020, not 4021.
+  testthat::expect_equal(resident_income_tax_2026_27(45000), 4021)
+})
