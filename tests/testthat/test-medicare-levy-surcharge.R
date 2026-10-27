@@ -41,12 +41,17 @@ testthat::test_that("partner income determines family tier but each adult has ow
 })
 
 testthat::test_that("individual income threshold still applies within a high-income family", {
-  couple <- new_scenario(
+  below <- new_scenario(
     "2026-27",
-    list(new_adult(201000), new_adult(10000))
+    list(new_adult(201000), new_adult(28011))
+  )
+  above <- new_scenario(
+    "2026-27",
+    list(new_adult(201000), new_adult(28012))
   )
 
-  testthat::expect_equal(unname(medicare_levy_surcharge(couple)), c(2010, 0))
+  testthat::expect_equal(unname(medicare_levy_surcharge(below)), c(2010, 0))
+  testthat::expect_equal(unname(medicare_levy_surcharge(above)), c(2010, 280.12))
 })
 
 testthat::test_that("dependent children increase family thresholds after the first child", {
