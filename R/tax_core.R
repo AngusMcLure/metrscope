@@ -6,18 +6,6 @@
 # docs/validation/tax-core-2026-27.md.
 # Amounts are returned without final tax-return rounding.
 
-.validate_scenario <- function(scenario) {
-  if (!inherits(scenario, "scenario") || !is.list(scenario) ||
-      is.null(scenario$financial_year) || is.null(scenario$adults)) {
-    stop("scenario must be a scenario object with financial_year and adults.",
-         call. = FALSE)
-  }
-
-  .validate_financial_year(scenario$financial_year, "scenario$financial_year")
-  .validate_adults(scenario$adults)
-  invisible(scenario)
-}
-
 .scenario_adult_incomes <- function(scenario) {
   .validate_scenario(scenario)
   incomes <- vapply(scenario$adults, function(adult) adult$taxable_income,
