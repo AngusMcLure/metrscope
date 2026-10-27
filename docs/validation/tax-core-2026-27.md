@@ -14,7 +14,7 @@ The code returns unrounded mathematical amounts. It is an analytical model, not 
 
 ## Data-driven policy schedules
 
-The implementation keeps the generic schedule evaluator in `R/tax_core.R` and stores the current-year policy parameters in `R/policy_schedules_2026_27.R`. Each schedule is a table with:
+The public functions `resident_income_tax(taxable_income, financial_year)`, `lito(taxable_income, financial_year)`, and `medicare_levy(taxable_income, financial_year)` select the schedule for the explicitly requested financial year. The current implementation supports `2026-27` only; unsupported years fail clearly rather than falling back to another year. The generic schedule evaluator is in `R/tax_core.R`, and the current-year policy parameters are stored in `R/policy_schedules_2026_27.R`. Each schedule is a table with:
 
 - `lower_bound`: inclusive start of the interval;
 - `upper_bound`: exclusive end of the interval;
@@ -23,7 +23,7 @@ The implementation keeps the generic schedule evaluator in `R/tax_core.R` and st
 
 For an input (x), the evaluator returns `value_at_lower + slope * (x - lower_bound)` for the interval containing (x). Schedules start at zero, have contiguous intervals, and end at infinity. They can express progressive liabilities, flat amounts, phase-outs, and policy-specified discontinuities. The schedule metadata also records the financial year, input, units, and source URLs.
 
-The evaluator does not decide the policy meaning of a schedule. In particular, LITO entitlement is capped at zero and the amount applied is capped at income tax payable in the component calculation. This keeps the generic numerical mechanism separate from rule-specific eligibility and application logic. A new financial year should ordinarily require a new parameter schedule, not a new calculation function.
+The evaluator does not decide the policy meaning of a schedule. In particular, LITO entitlement is capped at zero and the amount applied is capped at income tax payable in the component calculation. This keeps the generic numerical mechanism separate from rule-specific eligibility and application logic. Adding a financial year should ordinarily require a new parameter schedule and an explicit supported-year entry, not another set of year-suffixed calculation functions.
 
 ## Component calculations
 
@@ -73,7 +73,7 @@ At $35,012 the phase-in formula gives $700.10; at $35,013 the 2% formula gives $
 
 ## Not yet validated
 
-- The test file has been authored but has not been run in R in this environment.
+- The automated suite provides formula-level unit tests; it is not an independent validation against an official 2026–27 assessment.
 - These are formula-level unit tests, not independent validation against an official 2026–27 assessment.
 - Final tax-return rounding, the full family Medicare levy calculation, MLS, SAPTO, exemptions and other offsets remain outside this slice.
 - No METR or benefit interactions are implemented yet.

@@ -74,63 +74,88 @@ evaluate_piecewise_schedule <- function(input, schedule) {
     schedule$slope[row] * (input - schedule$lower_bound[row])
 }
 
-# Generic named access to a schedule in a financial-year policy configuration.
-.policy_schedule_value <- function(input, schedule_name, policy_schedules) {
-  if (!is.list(policy_schedules) ||
-      is.null(policy_schedules[[schedule_name]]) ||
-      is.null(policy_schedules[[schedule_name]]$schedule)) {
-    stop(sprintf("No policy schedule named '%s' was supplied.", schedule_name),
+# Return the policy schedules for an explicitly requested financial year.
+# Add a new case here when a new year's schedule has been implemented and
+# validated; never silently substitute a different year.
+.policy_schedules_for_year <- function(financial_year) {
+  valid <- is.character(financial_year) &&
+    length(financial_year) == 1L &&
+    !is.na(financial_year) &&
+    nzchar(financial_year)
+
+  if (!valid) {
+    stop("financial_year must be one non-empty character string.",
          call. = FALSE)
   }
 
-  evaluate_piecewise_schedule(
-    input = input,
-    schedule = policy_schedules[[schedule_name]]$schedule
+  switch(
+    financial_year,
+    "2026-27" = policy_schedules_2026_27,
+    stop(
+      sprintf(
+        "Unsupported financial_year '%s'. Supported financial years: 2026-27.",
+        financial_year
+      ),
+      call. = FALSE
+    )
   )
 }
 
-# Compatibility wrappers keep the calculation API readable while the
-# financial-year-specific policy data remains separate from calculation logic.
-resident_income_tax_2026_27 <- function(taxable_income) {
+.policy_schedule_value <- function(input, schedule_name, financial_year) {
+  policy_schedules <- .policy_schedules_for_year(financial_year)
+  policy_rule <- policy_schedules[[schedule_name]]
+
+  if (is.null(policy_rule) || is.null(policy_rule$schedule)) {
+    stop(
+      sprintf(
+        "No policy schedule named '%s' is available for financial year %s.",
+        schedule_name, financial_year
+      ),
+      call. = FALSE
+    )
+  }
+
+  evaluate_piecewise_schedule(input, policy_rule$schedule)
+}
+
+resident_income_tax <- function(taxable_income, financial_year) {
   .validate_taxable_income(taxable_income)
   .policy_schedule_value(
-    taxable_income, "resident_income_tax", policy_schedules_2026_27
+    taxable_income, "resident_income_tax", financial_year
   )
 }
 
-lito_2026_27 <- function(taxable_income) {
+lito <- function(taxable_income, financial_year) {
   .validate_taxable_income(taxable_income)
-  max(0, .policy_schedule_value(
-    taxable_income, "lito", policy_schedules_2026_27
-  ))
+  max(0, .policy_schedule_value(taxable_income, "lito", financial_year))
 }
 
-medicare_levy_2026_27 <- function(taxable_income) {
+medicare_levy <- function(taxable_income, financial_year) {
   .validate_taxable_income(taxable_income)
   .policy_schedule_value(
-    taxable_income, "medicare_levy_individual", policy_schedules_2026_27
+    taxable_income, "medicare_levy_individual", financial_year
   )
 }
 
 # Component-level annual liability for a standard resident individual.
 # The Medicare levy is separate because LITO does not reduce it.
-individual_tax_components_2026_27 <- function(taxable_income) {
+individual_tax_components <- function(taxable_income, financial_year) {
   .validate_taxable_income(taxable_income)
 
-  basic_tax <- resident_income_tax_2026_27(taxable_income)
-  lito <- lito_2026_27(taxable_income)
-  lito_applied <- min(basic_tax, lito)
+  basic_tax <- resident_income_tax(taxable_income, financial_year)
+  lito_entitlement <- lito(taxable_income, financial_year)
+  lito_applied <- min(basic_tax, lito_entitlement)
   income_tax_after_lito <- basic_tax - lito_applied
-  medicare_levy <- medicare_levy_2026_27(taxable_income)
+  levy <- medicare_levy(taxable_income, financial_year)
 
   list(
-    financial_year = "2026-27",
+    financial_year = financial_year,
     taxable_income = taxable_income,
     basic_income_tax = basic_tax,
-    lito = lito,
+    lito = lito_entitlement,
     lito_applied = lito_applied,
     income_tax_after_lito = income_tax_after_lito,
-    medicare_levy = medicare_levy,
-    total_tax_and_levies = income_tax_after_lito + medicare_levy
+    medicare_levy = levy,
+    total_tax_and_levies = income_tax_after_lito + levy
   )
 }
