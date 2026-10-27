@@ -11,6 +11,7 @@
 - Do not claim tests, checks, or manual verification passed unless you actually ran them. Report commands run and their results; if the environment prevents a check, say so.
 - Never put secrets, credentials, personal tax records, or other sensitive data into source control. Use environment variables for secrets and provide an example configuration without real values.
 - Do not fetch, execute, or install code from untrusted sources as part of setup without a clear reason.
+- **Every pull request you prepare must explicitly disclose AI assistance in its description.** Use the repository's `.github/PULL_REQUEST_TEMPLATE.md` and identify the actual tool used (for example, ChatGPT's GitHub integration or OpenAI Codex); do not claim Codex authored work if another tool was used. State that human review is required before merging.
 
 ## Tax and calculation correctness
 - This is an Australian tax project. Treat tax rates, thresholds, offsets, levies, eligibility rules, and financial-year boundaries as time-sensitive and jurisdiction-specific.
