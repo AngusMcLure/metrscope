@@ -61,7 +61,7 @@ testthat::test_that("worked examples reproduce the documented component totals",
 
 testthat::test_that("scenario inputs are validated by the tax rules", {
   bad_income <- structure(
-    list(financial_year = "2026-27", adults = list(new_adult(c(10000, 20000)))),
+    list(financial_year = "2026-27", adults = list(structure(list(taxable_income = c(10000, 20000)), class = "adult"))),
     class = "scenario"
   )
   testthat::expect_error(individual_tax_components(bad_income), "one finite")
