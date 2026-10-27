@@ -1,8 +1,8 @@
-# Minimal S3 scenario object.
+# Minimal S3 adult and scenario objects.
 #
-# A scenario records one or two adults. Children and other household
+# An adult currently records taxable income. Children and other household
 # circumstances can be added separately when the relevant rules are modelled.
-# The constructor does not validate whether tax rules exist for the requested
+# The constructors do not validate whether tax rules exist for the requested
 # financial year; the calculation functions are responsible for that check.
 
 .validate_financial_year <- function(financial_year, field = "financial_year") {
@@ -37,23 +37,29 @@
   invisible(taxable_income)
 }
 
+.validate_adult <- function(adult, field = "adult") {
+  if (!inherits(adult, "adult") || !is.list(adult) ||
+      is.null(adult$taxable_income)) {
+    stop(sprintf("%s must be an adult object with a taxable_income field.", field),
+         call. = FALSE)
+  }
+
+  .validate_taxable_income(adult$taxable_income, paste0(field, "$taxable_income"))
+  invisible(adult)
+}
+
+new_adult <- function(taxable_income) {
+  .validate_taxable_income(taxable_income)
+  structure(list(taxable_income = taxable_income), class = "adult")
+}
+
 .validate_adults <- function(adults) {
   if (!is.list(adults) || length(adults) < 1L || length(adults) > 2L) {
     stop("adults must be a list containing one or two adults.", call. = FALSE)
   }
 
   for (i in seq_along(adults)) {
-    adult <- adults[[i]]
-    if (!is.list(adult) || is.null(adult$taxable_income)) {
-      stop(
-        sprintf("adults[[%d]] must be a list with a taxable_income field.", i),
-        call. = FALSE
-      )
-    }
-    .validate_taxable_income(
-      adult$taxable_income,
-      sprintf("adults[[%d]]$taxable_income", i)
-    )
+    .validate_adult(adults[[i]], sprintf("adults[[%d]]", i))
   }
 
   invisible(adults)
