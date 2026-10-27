@@ -22,8 +22,18 @@ jobs:
         with:
           use-public-rspm: true
 
+      # testthat depends on fs, which compiles against libuv on Ubuntu.
+      # Install its system headers explicitly; otherwise install.packages()
+      # can warn and continue, leaving testthat unavailable in the next step.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libuv1-dev
+
       - name: Install test dependencies
-        run: Rscript -e 'install.packages("testthat", repos = "https://cloud.r-project.org")'
+        run: |
+          Rscript -e 'install.packages("testthat", repos = "https://cloud.r-project.org")'
+          Rscript -e 'stopifnot(requireNamespace("testthat", quietly = TRUE))'
 
       - name: Run tests
         run: Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'
