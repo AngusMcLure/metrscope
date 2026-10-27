@@ -4,7 +4,9 @@ Scope out marginal effective tax rates (METRs) for Australian tax residents.
 
 ## Status
 
-This repository is at an early implementation stage. An initial 2026–27 resident individual tax calculation covers basic income tax, LITO, and the standard individual Medicare levy case; its scope and validation limitations are documented in [the validation notes](docs/validation.md). Family payments, other levy circumstances, a general scenario/METR engine, and the Shiny interface have not yet been implemented. The intended architecture is an R calculation engine with a separate Shiny interface; see [the development guidelines](docs/development.md).
+The calculation engine currently models 2026–27 resident individual income tax, LITO, the standard individual Medicare levy, and an initial Medicare levy surcharge (MLS) calculation. MLS uses household income, the number of dependent children, and a full-year household hospital-cover assumption. Its scope and limitations are documented in [the validation notes](docs/validation.md) and [the tax-core validation specification](docs/validation/tax-core-2026-27.md).
+
+Family payments, childcare and housing support, other levy circumstances, a general METR comparison engine, and the Shiny interface have not yet been implemented. The intended architecture is an R calculation engine with a separate Shiny interface; see [the development guidelines](docs/development.md).
 
 ## Project aim
 
