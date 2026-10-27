@@ -155,3 +155,27 @@ testthat::test_that("public tax functions require a supported financial year", {
   testthat::expect_error(individual_tax_components(new_scenario("2025-26", list(list(taxable_income = 40000)))),
                          "Unsupported financial_year")
 })
+
+testthat::test_that("individual tax rules return one result per adult in a couple", {
+  couple <- new_scenario(
+    "2026-27",
+    list(list(taxable_income = 60000), list(taxable_income = 40000))
+  )
+  components <- individual_tax_components(couple)
+  first_alone <- individual_tax_components(
+    new_scenario("2026-27", list(list(taxable_income = 60000)))
+  )
+  second_alone <- individual_tax_components(
+    new_scenario("2026-27", list(list(taxable_income = 40000)))
+  )
+
+  testthat::expect_named(resident_income_tax(couple), c("adult_1", "adult_2"))
+  testthat::expect_length(lito(couple), 2)
+  testthat::expect_length(medicare_levy(couple), 2)
+  testthat::expect_equal(nrow(components), 2)
+  testthat::expect_equal(components$taxable_income, c(60000, 40000))
+  testthat::expect_equal(
+    components$total_tax_and_levies,
+    c(first_alone$total_tax_and_levies, second_alone$total_tax_and_levies)
+  )
+})
