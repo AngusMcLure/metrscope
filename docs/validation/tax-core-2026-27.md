@@ -12,6 +12,19 @@ The code returns unrounded mathematical amounts. It is an analytical model, not 
 - [ATO — Low income tax offset](https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/tax-offsets-and-rebates): maximum $700 to $37,500; taper of 5 cents per dollar from $37,500 to $45,000; then 1.5 cents per dollar from $45,000 to $66,667; nil thereafter. LITO is non-refundable and does not reduce the Medicare levy.
 - [Medicare Levy Act 1986 — compilation effective 1 July 2026](https://www.legislation.gov.au/C2004A03351/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html): standard individual low-income threshold $28,011 and phase-in limit $35,013; standard levy 2% above the phase-in limit. Between the threshold and phase-in limit, the levy is 10% of the excess over the threshold.
 
+## Data-driven policy schedules
+
+The implementation keeps the generic schedule evaluator in `R/tax_core.R` and stores the current-year policy parameters in `R/policy_schedules_2026_27.R`. Each schedule is a table with:
+
+- `lower_bound`: inclusive start of the interval;
+- `upper_bound`: exclusive end of the interval;
+- `value_at_lower`: the rule amount at the start of the interval;
+- `slope`: marginal change in the amount per dollar of input.
+
+For an input (x), the evaluator returns `value_at_lower + slope * (x - lower_bound)` for the interval containing (x). Schedules start at zero, have contiguous intervals, and end at infinity. They can express progressive liabilities, flat amounts, phase-outs, and policy-specified discontinuities. The schedule metadata also records the financial year, input, units, and source URLs.
+
+The evaluator does not decide the policy meaning of a schedule. In particular, LITO entitlement is capped at zero and the amount applied is capped at income tax payable in the component calculation. This keeps the generic numerical mechanism separate from rule-specific eligibility and application logic. A new financial year should ordinarily require a new parameter schedule, not a new calculation function.
+
 ## Component calculations
 
 Let (y) be taxable income.
@@ -49,7 +62,7 @@ Amounts below are unrounded model outputs, not tax-return assessments. They assu
 
 ## Boundary and validation cases
 
-The test suite covers:
+The test suite covers generic schedule interval evaluation and validation as well as tax-specific calculations. The tax-specific cases include:
 - values at and one dollar either side of each resident tax bracket boundary;
 - LITO at $37,500, $45,000 and $66,667, including its non-refundable application;
 - Medicare levy at $28,011 and around the $35,013 phase-in limit;
