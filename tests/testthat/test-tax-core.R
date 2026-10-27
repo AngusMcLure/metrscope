@@ -35,6 +35,7 @@ testthat::test_that("LITO reduces income tax but not the Medicare levy", {
   result <- individual_tax_components_2026_27(30000)
   testthat::expect_equal(result$basic_income_tax, 1770)
   testthat::expect_equal(result$lito, 700)
+  testthat::expect_equal(result$lito_applied, 700)
   testthat::expect_equal(result$income_tax_after_lito, 1070)
   testthat::expect_equal(result$medicare_levy, 198.9)
   testthat::expect_equal(result$total_tax_and_levies, 1268.9)
@@ -62,4 +63,12 @@ testthat::test_that("invalid taxable income is rejected", {
   testthat::expect_error(medicare_levy_2026_27(NA_real_), "finite")
   testthat::expect_error(individual_tax_components_2026_27(c(10000, 20000)),
                          "one finite")
+})
+
+testthat::test_that("unused non-refundable LITO is not treated as negative tax", {
+  result <- individual_tax_components_2026_27(10000)
+  testthat::expect_equal(result$lito, 700)
+  testthat::expect_equal(result$lito_applied, 0)
+  testthat::expect_equal(result$income_tax_after_lito, 0)
+  testthat::expect_equal(result$total_tax_and_levies, 0)
 })
