@@ -35,7 +35,7 @@ The $18,200 example illustrates that modelled tax is zero after LITO, but does n
 
 ## Validation plan
 
-The test suite checks bracket values and continuity, LITO phase-out points, Medicare levy phase-in behaviour, component reconciliation, and rejection of invalid inputs. The tests use testthat conventions. The repository does not yet have package metadata or an initialized test harness, and R/Rscript is not available in the current execution environment; therefore the tests could not be run here. They must be run when the R environment and package scaffold are available.
+The test suite checks bracket values and continuity, LITO phase-out points, Medicare levy phase-in behaviour, component reconciliation, non-refundable LITO treatment, and rejection of invalid inputs. The returned component ledger contains only additive rows (tax before offsets, LITO actually applied as a negative amount, and Medicare levy); the total is returned separately so subtotal rows cannot be accidentally double-counted. The tests use testthat conventions. The repository does not yet have package metadata or an initialized test harness, and R/Rscript is not available in the current execution environment; therefore the tests could not be run here. They must be run when the R environment and package scaffold are available.
 
 ## Sources
 
