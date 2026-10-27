@@ -10,22 +10,22 @@ make_ftb_scenario <- function(income, children, partner_income = NULL, ...) {
   new_scenario(
     "2026-27",
     adults,
-    ftb_children = children
+    children = children
   )
 }
 
 testthat::test_that("FTB-A uses child age-specific maximum and base rates", {
-  young <- make_ftb_scenario(0, list(new_ftb_child(5)))
-  teen <- make_ftb_scenario(0, list(new_ftb_child(14)))
+  young <- make_ftb_scenario(0, list(new_child(5)))
+  teen <- make_ftb_scenario(0, list(new_child(14)))
   testthat::expect_equal(unname(family_tax_benefit_part_a(young)), 6139.30)
   testthat::expect_equal(unname(family_tax_benefit_part_a(teen)), 7989.85)
 
-  above_limit <- make_ftb_scenario(129648, list(new_ftb_child(5)))
+  above_limit <- make_ftb_scenario(129648, list(new_child(5)))
   testthat::expect_equal(unname(family_tax_benefit_part_a(above_limit)), 0)
 })
 
 testthat::test_that("FTB-A method 1 income test has boundary behaviour", {
-  child <- list(new_ftb_child(5))
+  child <- list(new_child(5))
   free_area <- make_ftb_scenario(69131, child)
   over_free_area <- make_ftb_scenario(69132, child)
   base_rate <- make_ftb_scenario(89973, child)
@@ -38,7 +38,7 @@ testthat::test_that("FTB-A method 1 income test has boundary behaviour", {
 })
 
 testthat::test_that("FTB-A method 2 reduces the base rate above the higher free area", {
-  child <- list(new_ftb_child(5))
+  child <- list(new_child(5))
   at_threshold <- make_ftb_scenario(123078, child)
   just_over <- make_ftb_scenario(123079, child)
   nil_rate <- make_ftb_scenario(129648, child)
@@ -51,7 +51,7 @@ testthat::test_that("FTB-A method 2 reduces the base rate above the higher free 
 })
 
 testthat::test_that("larger families compare both rates above the higher income area", {
-  children <- list(new_ftb_child(5), new_ftb_child(6), new_ftb_child(7))
+  children <- list(new_child(5), new_child(6), new_child(7))
   scenario <- make_ftb_scenario(123079, children)
   components <- ftb_part_a_components(scenario)
 
@@ -60,7 +60,7 @@ testthat::test_that("larger families compare both rates above the higher income 
 })
 
 testthat::test_that("FTB-A combines both adults' adjusted taxable income", {
-  children <- list(new_ftb_child(5), new_ftb_child(14))
+  children <- list(new_child(5), new_child(14))
   low_family_income <- make_ftb_scenario(40000, children, partner_income = 20000)
   high_family_income <- make_ftb_scenario(40000, children, partner_income = 40000)
 
@@ -78,7 +78,7 @@ testthat::test_that("FTB-A combines both adults' adjusted taxable income", {
 
 testthat::test_that("FTB adjusted taxable income uses its own income adjustments", {
   scenario <- make_ftb_scenario(
-    50000, list(new_ftb_child(5)),
+    50000, list(new_child(5)),
     adjusted_fringe_benefits = 2000,
     target_foreign_income = 1000,
     net_investment_loss = 500,
@@ -97,10 +97,10 @@ testthat::test_that("FTB-A returns zero with no eligible children", {
   testthat::expect_equal(unname(family_tax_benefit_part_a(scenario)), 0)
 })
 
-testthat::test_that("FTB child inputs are validated", {
-  testthat::expect_error(new_ftb_child(-1), "age")
-  testthat::expect_error(new_ftb_child(20), "age")
-  testthat::expect_error(new_ftb_child(16), "secondary school student")
-  testthat::expect_error(new_ftb_child(15, TRUE), "under age 16")
-  testthat::expect_error(new_ftb_child(17, NA), "TRUE or FALSE")
+testthat::test_that("child inputs are validated", {
+  testthat::expect_error(new_child(-1), "age")
+  testthat::expect_error(new_child(20), "age")
+  testthat::expect_error(new_child(16), "secondary school student")
+  testthat::expect_error(new_child(15, TRUE), "under age 16")
+  testthat::expect_error(new_child(17, NA), "TRUE or FALSE")
 })
