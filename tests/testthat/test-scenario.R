@@ -51,7 +51,7 @@ testthat::test_that("new_scenario creates a scenario with one adult", {
   )
   testthat::expect_identical(x$financial_year, "2026-27")
   testthat::expect_identical(x$adults[[1]]$taxable_income, 60000)
-  testthat::expect_identical(x$dependent_children, 0)
+  testthat::expect_identical(x$dependent_children, 0L)
   testthat::expect_identical(x$appropriate_hospital_cover, FALSE)
   testthat::expect_identical(x$children, list())
 })
