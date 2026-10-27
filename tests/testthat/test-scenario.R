@@ -94,9 +94,10 @@ testthat::test_that("scenario derives the dependent-child count from children", 
   one <- new_scenario("2026-27", list(new_adult(60000)),
                       children = list(new_child(5)))
   two <- new_scenario("2026-27", list(new_adult(60000)),
-                      children = list(new_child(5), new_child(17, TRUE)))
+                      children = list(new_child(5), new_child(17, TRUE, "secondary")))
 
   testthat::expect_identical(one$dependent_children, 1L)
   testthat::expect_identical(two$dependent_children, 2L)
   testthat::expect_length(two$children, 2)
+  testthat::expect_identical(two$dependent_children, 2L)
 })
