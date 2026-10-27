@@ -212,7 +212,7 @@ medicare_levy_surcharge <- function(scenario) {
 .ftb_part_a_calculation <- function(scenario) {
   .validate_scenario(scenario)
   policy <- .policy_schedules_for_year(scenario$financial_year)$family_tax_benefit_part_a
-  children <- scenario$children
+  children <- Filter(.is_ftb_a_child, scenario$children)
   if (length(children) == 0L) {
     return(list(
       family_adjusted_taxable_income = max(0, sum(vapply(
