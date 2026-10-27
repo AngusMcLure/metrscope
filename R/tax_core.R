@@ -1,23 +1,17 @@
 # Core individual tax calculations.
 #
-# Policy schedules are data, maintained separately in
-# R/policy_schedules_2026_27.R. See docs/validation/tax-core-2026-27.md.
+# Public tax-rule functions accept a single scenario object and calculate the
+# relevant individual rule for each adult in that scenario. Policy schedules
+# are data, maintained separately in R/policy_schedules_2026_27.R. See
+# docs/validation/tax-core-2026-27.md.
 # Amounts are returned without final tax-return rounding.
 
-.validate_taxable_income <- function(taxable_income) {
-  valid <- is.numeric(taxable_income) &&
-    length(taxable_income) == 1L &&
-    !is.na(taxable_income) &&
-    is.finite(taxable_income) &&
-    taxable_income >= 0 &&
-    taxable_income == floor(taxable_income)
-
-  if (!valid) {
-    stop("taxable_income must be one finite, non-negative whole-dollar number.",
-         call. = FALSE)
-  }
-
-  invisible(taxable_income)
+.scenario_adult_incomes <- function(scenario) {
+  .validate_scenario(scenario)
+  incomes <- vapply(scenario$adults, function(adult) adult$taxable_income,
+                    numeric(1))
+  names(incomes) <- paste0("adult_", seq_along(incomes))
+  incomes
 }
 
 .validate_piecewise_schedule <- function(schedule) {
@@ -78,15 +72,7 @@ evaluate_piecewise_schedule <- function(input, schedule) {
 # Add a new case here when a new year's schedule has been implemented and
 # validated; never silently substitute a different year.
 .policy_schedules_for_year <- function(financial_year) {
-  valid <- is.character(financial_year) &&
-    length(financial_year) == 1L &&
-    !is.na(financial_year) &&
-    nzchar(financial_year)
-
-  if (!valid) {
-    stop("financial_year must be one non-empty character string.",
-         call. = FALSE)
-  }
+  .validate_financial_year(financial_year)
 
   switch(
     financial_year,
@@ -118,44 +104,53 @@ evaluate_piecewise_schedule <- function(input, schedule) {
   evaluate_piecewise_schedule(input, policy_rule$schedule)
 }
 
-resident_income_tax <- function(taxable_income, financial_year) {
-  .validate_taxable_income(taxable_income)
-  .policy_schedule_value(
-    taxable_income, "resident_income_tax", financial_year
+.apply_individual_rule <- function(scenario, schedule_name) {
+  incomes <- .scenario_adult_incomes(scenario)
+  values <- vapply(
+    incomes,
+    function(income) {
+      .policy_schedule_value(
+        income, schedule_name, scenario$financial_year
+      )
+    },
+    numeric(1)
   )
+  names(values) <- names(incomes)
+  values
 }
 
-lito <- function(taxable_income, financial_year) {
-  .validate_taxable_income(taxable_income)
-  max(0, .policy_schedule_value(taxable_income, "lito", financial_year))
+resident_income_tax <- function(scenario) {
+  .apply_individual_rule(scenario, "resident_income_tax")
 }
 
-medicare_levy <- function(taxable_income, financial_year) {
-  .validate_taxable_income(taxable_income)
-  .policy_schedule_value(
-    taxable_income, "medicare_levy_individual", financial_year
-  )
+lito <- function(scenario) {
+  .apply_individual_rule(scenario, "lito")
 }
 
-# Component-level annual liability for a standard resident individual.
-# The Medicare levy is separate because LITO does not reduce it.
-individual_tax_components <- function(taxable_income, financial_year) {
-  .validate_taxable_income(taxable_income)
+medicare_levy <- function(scenario) {
+  .apply_individual_rule(scenario, "medicare_levy_individual")
+}
 
-  basic_tax <- resident_income_tax(taxable_income, financial_year)
-  lito_entitlement <- lito(taxable_income, financial_year)
-  lito_applied <- min(basic_tax, lito_entitlement)
+# Component-level annual liability for each standard resident individual.
+# LITO does not reduce the Medicare levy. Rows correspond to adults in the
+# order supplied to new_scenario().
+individual_tax_components <- function(scenario) {
+  incomes <- .scenario_adult_incomes(scenario)
+  basic_tax <- resident_income_tax(scenario)
+  lito_entitlement <- lito(scenario)
+  lito_applied <- pmin(basic_tax, lito_entitlement)
   income_tax_after_lito <- basic_tax - lito_applied
-  levy <- medicare_levy(taxable_income, financial_year)
+  levy <- medicare_levy(scenario)
 
-  list(
-    financial_year = financial_year,
-    taxable_income = taxable_income,
-    basic_income_tax = basic_tax,
-    lito = lito_entitlement,
-    lito_applied = lito_applied,
-    income_tax_after_lito = income_tax_after_lito,
-    medicare_levy = levy,
-    total_tax_and_levies = income_tax_after_lito + levy
+  data.frame(
+    adult = seq_along(incomes),
+    financial_year = rep(scenario$financial_year, length(incomes)),
+    taxable_income = unname(incomes),
+    basic_income_tax = unname(basic_tax),
+    lito = unname(lito_entitlement),
+    lito_applied = unname(lito_applied),
+    income_tax_after_lito = unname(income_tax_after_lito),
+    medicare_levy = unname(levy),
+    total_tax_and_levies = unname(income_tax_after_lito + levy)
   )
 }
