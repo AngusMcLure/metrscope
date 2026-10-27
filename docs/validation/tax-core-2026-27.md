@@ -10,6 +10,22 @@ The current MLS implementation is intentionally limited to full-year household c
 
 The code returns unrounded mathematical amounts. Tax-return rounding and other assessment rules must be specified before results are presented as official liability estimates.
 
+## Deliberate modelling assumptions and exclusions
+
+These are intentional scope decisions for this model, not features currently planned for implementation. Results should be interpreted on that basis.
+
+- **Full-financial-year household circumstances:** hospital-cover status is represented by one Boolean for the whole financial year. Part-year cover and changes in cover during the year are not modelled.
+- **Stable relationship and household structure:** a scenario has one or two adults. Two adults are assumed to be spouses for MLS purposes; one adult with dependent children represents a single-parent family. Relationship changes and changes in household composition during the year are not modelled.
+- **Dependent children only:** the model takes a count of MLS-dependent children and applies the published additional-child threshold increment. It does not represent adult dependants or determine eligibility/dependency status from individual circumstances.
+- **No special MLS exemptions or prescribed-person cases:** the model does not assess exemptions or prescribed-person rules.
+- **Limited MLS income inputs:** the implemented income-test adjustments are reportable fringe benefits, reportable super contributions, net investment loss, and family trust distribution amounts. Assessable First Home Super Saver released amounts are not represented.
+- **Appropriate cover is a household-level assumption:** `appropriate_hospital_cover = TRUE` means the taxpayer(s) and all relevant dependants had appropriate private patient hospital cover for the entire financial year. The default `FALSE` assumes no appropriate full-year household cover; it does not infer cover from other inputs.
+- **Ordinary individual tax circumstances:** the model currently covers resident income tax, LITO, the standard individual Medicare levy, and the initial MLS calculation. Family-threshold Medicare levy reductions, SAPTO and other offsets, HELP repayments, family payments, childcare and housing support, and other transfer-payment interactions are outside scope.
+- **No tax-return rounding or official assessment simulation:** outputs are unrounded mathematical amounts. The model does not reproduce all tax-return rounding, assessment, or personal-circumstance rules and is not a substitute for an ATO assessment or professional tax advice.
+- **Financial-year coverage is explicit:** only 2026–27 is implemented. Requests for unsupported years fail rather than silently using a different year's rules.
+
+These assumptions are part of the current model contract. They should remain visible in the user-facing documentation wherever results are presented, rather than being left only in implementation details or test cases.
+
 ## Official sources and parameters
 
 - [Income Tax Rates Act 1986 — compilation effective 1 July 2026, Schedule 7 Part I](https://www.legislation.gov.au/C2004A03348/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html): resident marginal rates for 2026–27 are 0% to $18,200, 15% over $18,200 to $45,000, 30% over $45,000 to $135,000, 37% over $135,000 to $190,000, and 45% above $190,000.
