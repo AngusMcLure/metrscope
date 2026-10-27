@@ -62,7 +62,7 @@ testthat::test_that("invalid taxable income is rejected", {
   testthat::expect_error(resident_income_tax(-1, "2026-27"), "non-negative")
   testthat::expect_error(lito(1.5, "2026-27"), "whole-dollar")
   testthat::expect_error(medicare_levy(NA_real_, "2026-27"), "finite")
-  testthat::expect_error(individual_tax_components(c(10000, 20000)),
+  testthat::expect_error(individual_tax_components(c(10000, 20000), "2026-27"),
                          "one finite")
 })
 
