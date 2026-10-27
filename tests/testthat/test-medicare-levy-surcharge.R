@@ -70,6 +70,20 @@ testthat::test_that("dependent children increase family thresholds after the fir
   testthat::expect_equal(unname(medicare_levy_surcharge(two_children)), 0)
 })
 
+testthat::test_that("MLS counts only children meeting MLS dependant rules", {
+  children <- list(
+    new_child(20, australian_resident = TRUE, maintained_by_family = TRUE),
+    new_child(22, TRUE, "tertiary"),
+    new_child(22, FALSE, "tertiary"),
+    new_child(23, TRUE, "tertiary", australian_resident = FALSE),
+    new_child(24, TRUE, "other")
+  )
+  scenario <- new_scenario("2026-27", list(new_adult(211000)), children = children)
+
+  testthat::expect_identical(scenario$dependent_children, 2L)
+  testthat::expect_equal(unname(medicare_levy_surcharge(scenario)), 0)
+})
+
 testthat::test_that("MLS income adjustments determine the tier but not the surcharge base", {
   scenario <- new_scenario(
     "2026-27",
