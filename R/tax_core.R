@@ -1,19 +1,8 @@
-# Core individual tax calculations for 2026–27.
+# Core individual tax calculations.
 #
-# Scope: ordinary taxable income of an Australian resident individual, standard
-# LITO eligibility, and the standard individual Medicare levy threshold/phase-in.
-# This is not a complete tax assessment. See docs/validation/tax-core-2026-27.md.
-#
-# Sources:
-# - Income Tax Rates Act 1986, Schedule 7, Part I (compilation effective 1 July 2026):
-#   https://www.legislation.gov.au/C2004A03348/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html
-# - Medicare Levy Act 1986 (compilation effective 1 July 2026):
-#   https://www.legislation.gov.au/C2004A03351/2026-07-01/2026-07-01/text/original/epub/OEBPS/document_1/document_1.html
-# - ATO, Low income tax offset:
-#   https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/tax-offsets-and-rebates
-#
-# Amounts are returned without final tax-return rounding. Taxable income is
-# expected to be a non-negative whole-dollar amount, as normally reported.
+# Policy schedules are data, maintained separately in
+# R/policy_schedules_2026_27.R. See docs/validation/tax-core-2026-27.md.
+# Amounts are returned without final tax-return rounding.
 
 .validate_taxable_income <- function(taxable_income) {
   valid <- is.numeric(taxable_income) &&
@@ -31,64 +20,96 @@
   invisible(taxable_income)
 }
 
-# Basic resident income tax before offsets, for 2026–27.
+.validate_piecewise_schedule <- function(schedule) {
+  required <- c("lower_bound", "upper_bound", "value_at_lower", "slope")
+  if (!is.data.frame(schedule) || !all(required %in% names(schedule)) ||
+      nrow(schedule) < 1L) {
+    stop("schedule must be a non-empty data frame with the required columns.",
+         call. = FALSE)
+  }
+
+  numeric_columns <- vapply(schedule[required], is.numeric, logical(1))
+  if (!all(numeric_columns)) {
+    stop("All piecewise schedule columns must be numeric.", call. = FALSE)
+  }
+
+  if (anyNA(schedule[required]) ||
+      any(!is.finite(schedule$lower_bound)) ||
+      any(!is.finite(schedule$value_at_lower)) ||
+      any(!is.finite(schedule$slope)) ||
+      any(is.na(schedule$upper_bound)) ||
+      any(schedule$upper_bound <= schedule$lower_bound)) {
+    stop("Schedule bounds, values, or slopes are invalid.", call. = FALSE)
+  }
+
+  if (schedule$lower_bound[1] != 0 ||
+      any(diff(schedule$lower_bound) <= 0) ||
+      any(schedule$upper_bound[-nrow(schedule)] !=
+          schedule$lower_bound[-1]) ||
+      !is.infinite(schedule$upper_bound[nrow(schedule)]) ||
+      schedule$upper_bound[nrow(schedule)] < 0) {
+    stop("Schedule must start at zero and contain contiguous intervals ending at Inf.",
+         call. = FALSE)
+  }
+
+  invisible(schedule)
+}
+
+# Evaluate a piecewise-linear policy schedule.
+#
+# Each row covers [lower_bound, upper_bound). The amount is anchored by
+# value_at_lower and changes at slope per unit of input. Discontinuities are
+# allowed when the policy specifies a cliff; callers should test those points.
+evaluate_piecewise_schedule <- function(input, schedule) {
+  if (!is.numeric(input) || length(input) != 1L || is.na(input) ||
+      !is.finite(input) || input < 0) {
+    stop("input must be one finite, non-negative number.", call. = FALSE)
+  }
+  .validate_piecewise_schedule(schedule)
+
+  row <- findInterval(input, schedule$lower_bound)
+  row <- max(1L, min(row, nrow(schedule)))
+
+  schedule$value_at_lower[row] +
+    schedule$slope[row] * (input - schedule$lower_bound[row])
+}
+
+# Generic named access to a schedule in a financial-year policy configuration.
+.policy_schedule_value <- function(input, schedule_name, policy_schedules) {
+  if (!is.list(policy_schedules) ||
+      is.null(policy_schedules[[schedule_name]]) ||
+      is.null(policy_schedules[[schedule_name]]$schedule)) {
+    stop(sprintf("No policy schedule named '%s' was supplied.", schedule_name),
+         call. = FALSE)
+  }
+
+  evaluate_piecewise_schedule(
+    input = input,
+    schedule = policy_schedules[[schedule_name]]$schedule
+  )
+}
+
+# Compatibility wrappers keep the calculation API readable while the
+# financial-year-specific policy data remains separate from calculation logic.
 resident_income_tax_2026_27 <- function(taxable_income) {
   .validate_taxable_income(taxable_income)
-  income <- taxable_income
-
-  if (income <= 18200) {
-    return(0)
-  }
-  if (income <= 45000) {
-    return((income - 18200) * 0.15)
-  }
-  if (income <= 135000) {
-    return(4020 + (income - 45000) * 0.30)
-  }
-  if (income <= 190000) {
-    return(31020 + (income - 135000) * 0.37)
-  }
-
-  51370 + (income - 190000) * 0.45
+  .policy_schedule_value(
+    taxable_income, "resident_income_tax", policy_schedules_2026_27
+  )
 }
 
-# Low Income Tax Offset for eligible Australian resident individuals.
-# This function implements the ATO's published 2026–27-relevant schedule;
-# eligibility beyond residency/taxable-income scope is not modelled here.
 lito_2026_27 <- function(taxable_income) {
   .validate_taxable_income(taxable_income)
-  income <- taxable_income
-
-  if (income <= 37500) {
-    return(700)
-  }
-  if (income <= 45000) {
-    return(700 - 0.05 * (income - 37500))
-  }
-  if (income <= 66667) {
-    return(max(0, 325 - 0.015 * (income - 45000)))
-  }
-
-  0
+  max(0, .policy_schedule_value(
+    taxable_income, "lito", policy_schedules_2026_27
+  ))
 }
 
-# Standard individual Medicare levy for 2026–27.
-# Excludes family threshold/reduction rules, SAPTO-related treatment,
-# exemptions, and Medicare levy surcharge.
 medicare_levy_2026_27 <- function(taxable_income) {
   .validate_taxable_income(taxable_income)
-  income <- taxable_income
-  threshold <- 28011
-  phase_in_limit <- 35013
-
-  if (income <= threshold) {
-    return(0)
-  }
-  if (income < phase_in_limit) {
-    return(0.10 * (income - threshold))
-  }
-
-  0.02 * income
+  .policy_schedule_value(
+    taxable_income, "medicare_levy_individual", policy_schedules_2026_27
+  )
 }
 
 # Component-level annual liability for a standard resident individual.
