@@ -43,25 +43,30 @@
 }
 
 .validate_adult <- function(adult, field = "adult") {
-  required <- c(
-    "taxable_income",
+  if (!inherits(adult, "adult") || !is.list(adult) ||
+      is.null(adult$taxable_income)) {
+    stop(
+      sprintf("%s must be an adult object with a taxable_income field.", field),
+      call. = FALSE
+    )
+  }
+  .validate_taxable_income(adult$taxable_income,
+                           paste0(field, "$taxable_income"))
+
+  required_mls_fields <- c(
     "reportable_fringe_benefits",
     "reportable_super_contributions",
     "net_investment_loss",
     "family_trust_distribution"
   )
-  if (!inherits(adult, "adult") || !is.list(adult) ||
-      !all(required %in% names(adult))) {
+  if (!all(required_mls_fields %in% names(adult))) {
     stop(
-      sprintf(
-        "%s must be an adult object with taxable_income and all required MLS income fields.",
-        field
-      ),
+      sprintf("%s must include all required MLS income fields.", field),
       call. = FALSE
     )
   }
 
-  for (name in required) {
+  for (name in required_mls_fields) {
     .validate_nonnegative_whole_amount(
       adult[[name]], paste0(field, "$", name)
     )
