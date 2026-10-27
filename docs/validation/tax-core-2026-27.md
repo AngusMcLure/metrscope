@@ -50,13 +50,13 @@ For the standard individual Medicare levy case:
 
 For each adult, the implementation calculates income for MLS threshold purposes as:
 
-[
-\text{MLS income}_i =
-y_i + \text{reportable fringe benefits}_i +
-\text{reportable super contributions}_i +
-\text{net investment loss}_i +
-\text{family trust distribution amount}_i
-]
+```text
+MLS income = taxable income
+           + reportable fringe benefits
+           + reportable super contributions
+           + net investment loss
+           + family trust distribution amount
+```
 
 The family total is the sum of adult MLS incomes. A single adult without dependent children uses the single thresholds. A couple, or a single adult with dependent children, uses the family thresholds. In the current scenario API, a scenario with two adults assumes they are spouses for MLS purposes; a single-parent scenario has one adult and a positive dependent-child count. The family thresholds increase by $1,500 for each dependent child after the first.
 
