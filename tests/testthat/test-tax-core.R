@@ -1,5 +1,6 @@
 # These tests source the calculation file directly because the package
 # scaffold and test runner are not yet configured.
+source(testthat::test_path("../../R/policy_schedules_2026_27.R"))
 source(testthat::test_path("../../R/tax_core.R"))
 
 testthat::test_that("resident tax brackets have the correct boundaries", {
@@ -71,4 +72,62 @@ testthat::test_that("unused non-refundable LITO is not treated as negative tax",
   testthat::expect_equal(result$lito_applied, 0)
   testthat::expect_equal(result$income_tax_after_lito, 0)
   testthat::expect_equal(result$total_tax_and_levies, 0)
+})
+
+
+testthat::test_that("generic piecewise schedules evaluate intervals and slopes", {
+  schedule <- data.frame(
+    lower_bound = c(0, 10, 20),
+    upper_bound = c(10, 20, Inf),
+    value_at_lower = c(0, 0, 5),
+    slope = c(0, 0.5, 1)
+  )
+
+  testthat::expect_equal(evaluate_piecewise_schedule(0, schedule), 0)
+  testthat::expect_equal(evaluate_piecewise_schedule(10, schedule), 0)
+  testthat::expect_equal(evaluate_piecewise_schedule(12, schedule), 1)
+  testthat::expect_equal(evaluate_piecewise_schedule(20, schedule), 5)
+  testthat::expect_equal(evaluate_piecewise_schedule(23, schedule), 8)
+})
+
+testthat::test_that("2026-27 policy schedules reproduce the existing tax rules", {
+  testthat::expect_equal(
+    evaluate_piecewise_schedule(45000, policy_schedules_2026_27$resident_income_tax$schedule),
+    4020
+  )
+  testthat::expect_equal(
+    evaluate_piecewise_schedule(40000, policy_schedules_2026_27$lito$schedule),
+    575
+  )
+  testthat::expect_equal(
+    evaluate_piecewise_schedule(35012, policy_schedules_2026_27$medicare_levy_individual$schedule),
+    700.10
+  )
+  testthat::expect_equal(
+    evaluate_piecewise_schedule(35013, policy_schedules_2026_27$medicare_levy_individual$schedule),
+    700.26
+  )
+})
+
+testthat::test_that("piecewise schedule rejects malformed interval definitions", {
+  bad_gap <- data.frame(
+    lower_bound = c(0, 11),
+    upper_bound = c(10, Inf),
+    value_at_lower = c(0, 0),
+    slope = c(0, 1)
+  )
+  testthat::expect_error(evaluate_piecewise_schedule(5, bad_gap), "contiguous")
+
+  bad_order <- data.frame(
+    lower_bound = c(0, 20),
+    upper_bound = c(10, Inf),
+    value_at_lower = c(0, 0),
+    slope = c(0, 1)
+  )
+  testthat::expect_error(evaluate_piecewise_schedule(5, bad_order), "contiguous")
+
+  testthat::expect_error(
+    evaluate_piecewise_schedule(-1, policy_schedules_2026_27$lito$schedule),
+    "non-negative"
+  )
 })
