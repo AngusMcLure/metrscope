@@ -11,7 +11,11 @@ testthat::test_that("new_adult creates and validates an adult object", {
       "reportable_fringe_benefits",
       "reportable_super_contributions",
       "net_investment_loss",
-      "family_trust_distribution"
+      "family_trust_distribution",
+      "adjusted_fringe_benefits",
+      "target_foreign_income",
+      "tax_free_pension_benefit",
+      "child_maintenance_expenditure"
     )
   )
   testthat::expect_identical(adult$taxable_income, 60000)
@@ -41,13 +45,15 @@ testthat::test_that("new_scenario creates a scenario with one adult", {
       "financial_year",
       "adults",
       "dependent_children",
-      "appropriate_hospital_cover"
+      "appropriate_hospital_cover",
+      "ftb_children"
     )
   )
   testthat::expect_identical(x$financial_year, "2026-27")
   testthat::expect_identical(x$adults[[1]]$taxable_income, 60000)
   testthat::expect_identical(x$dependent_children, 0)
   testthat::expect_identical(x$appropriate_hospital_cover, FALSE)
+  testthat::expect_identical(x$ftb_children, list())
 })
 
 testthat::test_that("new_scenario supports two adults", {
