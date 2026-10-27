@@ -141,7 +141,7 @@ new_adult <- function(taxable_income,
     child <- children[[i]]
     field <- sprintf("children[[%d]]", i)
     required <- c("age", "full_time_student", "study_type",
-                  "australian_resident", "maintained_by_family")
+                  "australian_tax_resident", "maintained_by_family")
     if (!inherits(child, "child") || !is.list(child) ||
         !all(required %in% names(child))) {
       stop(sprintf("%s must be a child object with all required fields.", field),
@@ -171,7 +171,7 @@ new_adult <- function(taxable_income,
       stop(sprintf("%s$study_type cannot be 'none' for a full-time student.", field),
            call. = FALSE)
     }
-    for (name in c("australian_resident", "maintained_by_family")) {
+    for (name in c("australian_tax_resident", "maintained_by_family")) {
       value <- child[[name]]
       if (!is.logical(value) || length(value) != 1L || is.na(value)) {
         stop(sprintf("%s$%s must be TRUE or FALSE.", field, name), call. = FALSE)
@@ -183,7 +183,7 @@ new_adult <- function(taxable_income,
 
 # MLS and FTB-A use different eligibility rules for the same child facts.
 .is_mls_dependent_child <- function(child) {
-  isTRUE(child$australian_resident) &&
+  isTRUE(child$australian_tax_resident) &&
     isTRUE(child$maintained_by_family) &&
     (child$age < 21 ||
        (child$age < 25 && isTRUE(child$full_time_student) &&
@@ -197,14 +197,14 @@ new_adult <- function(taxable_income,
 }
 
 new_child <- function(age, full_time_student = FALSE, study_type = "none",
-                      australian_resident = TRUE,
+                      australian_tax_resident = TRUE,
                       maintained_by_family = TRUE) {
   child <- structure(
     list(
       age = age,
       full_time_student = full_time_student,
       study_type = study_type,
-      australian_resident = australian_resident,
+      australian_tax_resident = australian_tax_resident,
       maintained_by_family = maintained_by_family
     ),
     class = "child"
