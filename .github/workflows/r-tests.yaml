@@ -31,4 +31,10 @@ jobs:
           Rscript -e 'stopifnot(requireNamespace("testthat", quietly = TRUE))'
 
       - name: Run tests
-        run: Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'
+        shell: bash
+        run: |
+          if find tests/testthat -maxdepth 1 -type f -name 'test*.R' -print -quit 2>/dev/null | grep -q .; then
+            Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'
+          else
+            echo "No testthat test files on this branch yet; skipping the test run."
+          fi
