@@ -157,6 +157,10 @@ The test suite covers:
 - the additional-child threshold increment;
 - MLS income adjustments affecting tier selection without being included in the surcharge base;
 - full-year appropriate hospital cover;
+- FTB-A maximum and base rates by child age;
+- FTB-A income-free and higher-income-free-area boundaries, including the transition to nil;
+- combined adult ATI and FTB-specific ATI adjustments;
+- FTB child input validation;
 - invalid income and household inputs, and unsupported financial years.
 
 At $35,012 the standard Medicare levy phase-in formula gives $700.10; at $35,013 the 2% formula gives $700.26. This small jump follows the statutory threshold/phase-in definitions and is preserved rather than smoothed away.
