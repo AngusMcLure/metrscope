@@ -47,9 +47,10 @@ testthat::test_that("component ledger reconciles", {
   result <- calculate_individual_tax_2026_27(100000)
   testthat::expect_equal(result$financial_year, "2026-27")
   testthat::expect_equal(result$total_income_tax_and_medicare_levy, 22520)
-  testthat::expect_equal(result$components$amount[3], 20520)
-  testthat::expect_equal(result$components$amount[4], 2000)
-  testthat::expect_equal(result$components$amount[5], 22520)
+  testthat::expect_equal(result$components$amount[1], 20520)
+  testthat::expect_equal(result$components$amount[2], 0)
+  testthat::expect_equal(result$components$amount[3], 2000)
+  testthat::expect_equal(sum(result$components$amount), 22520)
 })
 
 testthat::test_that("invalid taxable income is rejected", {
@@ -57,4 +58,11 @@ testthat::test_that("invalid taxable income is rejected", {
   testthat::expect_error(income_tax_before_offsets_2026_27(NA_real_))
   testthat::expect_error(income_tax_before_offsets_2026_27(c(100, 200)))
   testthat::expect_error(income_tax_before_offsets_2026_27(Inf))
+})
+
+testthat::test_that("non-refundable LITO is not applied beyond tax payable", {
+  result <- calculate_individual_tax_2026_27(10000)
+  testthat::expect_equal(result$components$amount[1], 0)
+  testthat::expect_equal(result$components$amount[2], 0)
+  testthat::expect_equal(result$total_income_tax_and_medicare_levy, 0)
 })
