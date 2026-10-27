@@ -46,14 +46,14 @@ testthat::test_that("new_scenario creates a scenario with one adult", {
       "adults",
       "dependent_children",
       "appropriate_hospital_cover",
-      "ftb_children"
+      "children"
     )
   )
   testthat::expect_identical(x$financial_year, "2026-27")
   testthat::expect_identical(x$adults[[1]]$taxable_income, 60000)
   testthat::expect_identical(x$dependent_children, 0)
   testthat::expect_identical(x$appropriate_hospital_cover, FALSE)
-  testthat::expect_identical(x$ftb_children, list())
+  testthat::expect_identical(x$children, list())
 })
 
 testthat::test_that("new_scenario supports two adults", {
@@ -88,4 +88,15 @@ testthat::test_that("scenario can record a year before its tax rules are impleme
 
   testthat::expect_identical(x$financial_year, "2025-26")
   testthat::expect_identical(x$adults[[1]]$taxable_income, 60000)
+})
+
+testthat::test_that("scenario derives the dependent-child count from children", {
+  one <- new_scenario("2026-27", list(new_adult(60000)),
+                      children = list(new_child(5)))
+  two <- new_scenario("2026-27", list(new_adult(60000)),
+                      children = list(new_child(5), new_child(17, TRUE)))
+
+  testthat::expect_identical(one$dependent_children, 1L)
+  testthat::expect_identical(two$dependent_children, 2L)
+  testthat::expect_length(two$children, 2)
 })
