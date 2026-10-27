@@ -98,7 +98,8 @@ individual_tax_components_2026_27 <- function(taxable_income) {
 
   basic_tax <- resident_income_tax_2026_27(taxable_income)
   lito <- lito_2026_27(taxable_income)
-  income_tax_after_lito <- max(0, basic_tax - lito)
+  lito_applied <- min(basic_tax, lito)
+  income_tax_after_lito <- basic_tax - lito_applied
   medicare_levy <- medicare_levy_2026_27(taxable_income)
 
   list(
@@ -106,6 +107,7 @@ individual_tax_components_2026_27 <- function(taxable_income) {
     taxable_income = taxable_income,
     basic_income_tax = basic_tax,
     lito = lito,
+    lito_applied = lito_applied,
     income_tax_after_lito = income_tax_after_lito,
     medicare_levy = medicare_levy,
     total_tax_and_levies = income_tax_after_lito + medicare_levy
