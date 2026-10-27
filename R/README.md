@@ -7,7 +7,7 @@ This directory is for reusable R functions that implement tax, benefits, househo
 - Add `testthat` tests for new calculation logic, including boundaries and interactions.
 - Document authoritative sources and effective dates for substantive policy rules.
 
-The `new_adult()`, `new_ftb_child()`, and `new_scenario()` constructors are in [scenario.R](scenario.R). Adults store taxable income, MLS income-test adjustments, and the additional fields used to calculate FTB adjusted taxable income. Scenarios store the financial year, one or two adults, the dependent-child count used for MLS, full-year hospital-cover status, and an optional list of age-specific FTB children.
+The `new_adult()`, `new_child()`, and `new_scenario()` constructors are in [scenario.R](scenario.R). Adults store taxable income, MLS income-test adjustments, and the additional fields used to calculate FTB adjusted taxable income. Scenarios store the financial year, one or two adults, the list of children, from which the dependent-child count used for MLS is derived, and full-year hospital-cover status.
 
 Example:
 
@@ -18,9 +18,8 @@ scenario <- new_scenario(
     new_adult(taxable_income = 150000),
     new_adult(taxable_income = 70000)
   ),
-  dependent_children = 2,
   appropriate_hospital_cover = FALSE,
-  ftb_children = list(new_ftb_child(5), new_ftb_child(8))
+  children = list(new_child(5), new_child(8))
 )
 individual_tax_components(scenario)
 ftb_part_a_components(scenario)
