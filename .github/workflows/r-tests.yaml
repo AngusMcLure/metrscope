@@ -1,0 +1,38 @@
+name: R tests
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run testthat suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install test dependencies
+        # setup-r exposes the Posit Package Manager repository in RSPM.
+        # Use it to get Linux binaries where available, rather than forcing
+        # source compilation from cloud.r-project.org.
+        run: |
+          Rscript -e 'repos <- Sys.getenv("RSPM"); stopifnot(nzchar(repos)); install.packages("testthat", repos = repos)'
+          Rscript -e 'stopifnot(requireNamespace("testthat", quietly = TRUE))'
+
+      - name: Run tests
+        shell: bash
+        run: |
+          if find tests/testthat -maxdepth 1 -type f -name 'test*.R' -print -quit 2>/dev/null | grep -q .; then
+            Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary")'
+          else
+            echo "No testthat test files on this branch yet; skipping the test run."
+          fi
