@@ -73,7 +73,7 @@ At $35,012 the phase-in formula gives $700.10; at $35,013 the 2% formula gives $
 
 ## Not yet validated
 
-- The test file has been authored but has not been run in R in this environment.
+- The automated suite provides formula-level unit tests; it is not an independent validation against an official 2026–27 assessment.
 - These are formula-level unit tests, not independent validation against an official 2026–27 assessment.
 - Final tax-return rounding, the full family Medicare levy calculation, MLS, SAPTO, exemptions and other offsets remain outside this slice.
 - No METR or benefit interactions are implemented yet.
