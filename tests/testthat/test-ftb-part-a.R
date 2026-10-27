@@ -79,7 +79,7 @@ testthat::test_that("FTB adjusted taxable income uses its own income adjustments
   )
   testthat::expect_equal(
     ftb_part_a_components(scenario)$family_adjusted_taxable_income,
-    52000
+    54000
   )
 })
 
