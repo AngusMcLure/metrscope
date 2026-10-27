@@ -22,17 +22,12 @@ jobs:
         with:
           use-public-rspm: true
 
-      # testthat depends on fs, which compiles against libuv on Ubuntu.
-      # Install its system headers explicitly; otherwise install.packages()
-      # can warn and continue, leaving testthat unavailable in the next step.
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes libuv1-dev
-
       - name: Install test dependencies
+        # setup-r exposes the Posit Package Manager repository in RSPM.
+        # Use it to get Linux binaries where available, rather than forcing
+        # source compilation from cloud.r-project.org.
         run: |
-          Rscript -e 'install.packages("testthat", repos = "https://cloud.r-project.org")'
+          Rscript -e 'repos <- Sys.getenv("RSPM"); stopifnot(nzchar(repos)); install.packages("testthat", repos = repos)'
           Rscript -e 'stopifnot(requireNamespace("testthat", quietly = TRUE))'
 
       - name: Run tests
