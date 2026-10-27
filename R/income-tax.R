@@ -67,24 +67,23 @@ calculate_individual_tax_2026_27 <- function(taxable_income) {
   .validate_nonnegative_scalar(taxable_income, "taxable_income")
 
   tax_before_offsets <- income_tax_before_offsets_2026_27(taxable_income)
-  lito <- lito_2026_27(taxable_income)
-  tax_after_lito <- max(0, tax_before_offsets - lito)
+  lito_entitlement <- lito_2026_27(taxable_income)
+  lito_applied <- min(tax_before_offsets, lito_entitlement)
+  tax_after_lito <- tax_before_offsets - lito_applied
   medicare_levy <- medicare_levy_individual_2026_27(taxable_income)
 
+  # These rows are additive components. Subtotals and totals are returned
+  # separately to prevent downstream code from accidentally double-counting.
   components <- data.frame(
     component = c(
-      "Income tax before LITO",
-      "Low Income Tax Offset",
-      "Income tax after LITO",
-      "Medicare levy",
-      "Income tax and Medicare levy total"
+      "Income tax before offsets",
+      "LITO applied",
+      "Medicare levy"
     ),
     amount = c(
       tax_before_offsets,
-      -lito,
-      tax_after_lito,
-      medicare_levy,
-      tax_after_lito + medicare_levy
+      -lito_applied,
+      medicare_levy
     ),
     stringsAsFactors = FALSE
   )
