@@ -72,10 +72,10 @@ testthat::test_that("dependent children increase family thresholds after the fir
 
 testthat::test_that("MLS counts only children meeting MLS dependant rules", {
   children <- list(
-    new_child(20, australian_resident = TRUE, maintained_by_family = TRUE),
+    new_child(20, australian_tax_resident = TRUE, maintained_by_family = TRUE),
     new_child(22, TRUE, "tertiary"),
     new_child(22, FALSE, "tertiary"),
-    new_child(23, TRUE, "tertiary", australian_resident = FALSE),
+    new_child(23, TRUE, "tertiary", australian_tax_resident = FALSE),
     new_child(24, TRUE, "other")
   )
   scenario <- new_scenario("2026-27", list(new_adult(211000)), children = children)
