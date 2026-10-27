@@ -135,14 +135,14 @@ new_adult <- function(taxable_income,
 # FTB-A models age-specific rates and requires secondary study for ages 16–19.
 .validate_children <- function(children) {
   if (!is.list(children)) {
-    stop("children must be a list of FTB child objects.", call. = FALSE)
+    stop("children must be a list of child objects.", call. = FALSE)
   }
   for (i in seq_along(children)) {
     child <- children[[i]]
     field <- sprintf("children[[%d]]", i)
     if (!inherits(child, "child") || !is.list(child) ||
         is.null(child$age) || is.null(child$secondary_school_student)) {
-      stop(sprintf("%s must be an FTB child object.", field), call. = FALSE)
+      stop(sprintf("%s must be a child object.", field), call. = FALSE)
     }
     if (!is.numeric(child$age) || length(child$age) != 1L ||
         is.na(child$age) || !is.finite(child$age) ||
