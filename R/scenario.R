@@ -53,7 +53,10 @@
   if (!inherits(adult, "adult") || !is.list(adult) ||
       !all(required %in% names(adult))) {
     stop(
-      sprintf("%s must be an adult object with all required income fields.", field),
+      sprintf(
+        "%s must be an adult object with taxable_income and all required MLS income fields.",
+        field
+      ),
       call. = FALSE
     )
   }
@@ -113,22 +116,19 @@ new_adult <- function(taxable_income,
 
 .validate_scenario <- function(scenario) {
   if (!inherits(scenario, "scenario") || !is.list(scenario) ||
-      is.null(scenario$financial_year) || is.null(scenario$adults) ||
-      is.null(scenario$dependent_children) ||
-      is.null(scenario$appropriate_hospital_cover)) {
-    stop(
-      paste(
-        "scenario must be a scenario object with financial_year, adults,",
-        "dependent_children, and appropriate_hospital_cover."
-      ),
-      call. = FALSE
-    )
+      is.null(scenario$financial_year) || is.null(scenario$adults)) {
+    stop("scenario must be a scenario object with financial_year and adults.",
+         call. = FALSE)
   }
 
   .validate_financial_year(scenario$financial_year, "scenario$financial_year")
   .validate_adults(scenario$adults)
+  if (is.null(scenario$dependent_children)) {
+    stop("scenario$dependent_children must be supplied.", call. = FALSE)
+  }
   .validate_dependent_children(scenario$dependent_children)
-  if (!is.logical(scenario$appropriate_hospital_cover) ||
+  if (is.null(scenario$appropriate_hospital_cover) ||
+      !is.logical(scenario$appropriate_hospital_cover) ||
       length(scenario$appropriate_hospital_cover) != 1L ||
       is.na(scenario$appropriate_hospital_cover)) {
     stop("scenario$appropriate_hospital_cover must be TRUE or FALSE.",
