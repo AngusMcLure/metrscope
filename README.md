@@ -4,7 +4,7 @@ Scope out marginal effective tax rates (METRs) for Australian tax residents.
 
 ## Status
 
-This repository is at an initial scaffold stage. The calculation model, user interface, and development workflow have not yet been established. Treat them as design decisions rather than existing features.
+This repository is at an initial scaffold stage. The calculation model and user interface have not yet been implemented. The intended architecture is an R calculation engine with a separate Shiny interface; see [the development guidelines](docs/development.md).
 
 ## Project aim
 
@@ -14,6 +14,6 @@ Any implemented results should clearly state their scope, inputs, assumptions, a
 
 ## Development
 
-See [`AGENTS.md`](AGENTS.md) for instructions for AI coding agents, including Codex. In particular, changes should be made on task branches and proposed through pull requests; do not commit directly to `main`.
+See [`AGENTS.md`](AGENTS.md) for instructions for AI coding agents, including Codex, and [`docs/development.md`](docs/development.md) for the R/Shiny architecture, dependency policy, style, testing, and development workflow.
 
-As the project takes shape, document the chosen runtime, setup steps, test commands, data sources, and supported scenarios here.
+Changes should be made on task branches and proposed through pull requests; do not commit directly to `main` or merge PRs.
