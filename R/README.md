@@ -19,9 +19,11 @@ scenario <- new_scenario(
     new_adult(taxable_income = 70000)
   ),
   dependent_children = 2,
-  appropriate_hospital_cover = FALSE
+  appropriate_hospital_cover = FALSE,
+  ftb_children = list(new_ftb_child(5), new_ftb_child(8))
 )
 individual_tax_components(scenario)
+ftb_part_a_components(scenario)
 ```
 
 The validators are deliberately layered: `.validate_adult()` checks one adult object and its income fields; `.validate_adults()` checks that the collection contains one or two entries, then iteratively applies `.validate_adult()` to each entry. `new_scenario()` uses that collection validator and validates the household inputs.
