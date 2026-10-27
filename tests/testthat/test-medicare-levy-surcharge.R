@@ -15,7 +15,7 @@ testthat::test_that("single MLS thresholds and rates have correct boundaries", {
 
 testthat::test_that("family MLS thresholds and rates have correct boundaries", {
   make_family <- function(income) {
-    new_scenario("2026-27", list(new_adult(income)), dependent_children = 1)
+    new_scenario("2026-27", list(new_adult(income)), children = list(new_child(0)))
   }
 
   testthat::expect_equal(unname(medicare_levy_surcharge(make_family(210000))), 0)
@@ -58,12 +58,12 @@ testthat::test_that("dependent children increase family thresholds after the fir
   one_child <- new_scenario(
     "2026-27",
     list(new_adult(211000)),
-    dependent_children = 1
+    children = list(new_child(0))
   )
   two_children <- new_scenario(
     "2026-27",
     list(new_adult(211000)),
-    dependent_children = 2
+    children = list(new_child(0), new_child(1))
   )
 
   testthat::expect_equal(unname(medicare_levy_surcharge(one_child)), 2110)
@@ -93,8 +93,8 @@ testthat::test_that("MLS inputs are validated", {
   testthat::expect_error(new_adult(60000, reportable_fringe_benefits = -1),
                          "reportable_fringe_benefits")
   testthat::expect_error(new_scenario("2026-27", list(new_adult(60000)),
-                                      dependent_children = 1.5),
-                         "dependent_children")
+                                      children = list(new_child(1.5))),
+                         "age")
   testthat::expect_error(new_scenario("2026-27", list(new_adult(60000)),
                                       appropriate_hospital_cover = NA),
                          "appropriate_hospital_cover")
