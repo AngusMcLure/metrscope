@@ -1,39 +1,40 @@
 # These tests source the calculation file directly because the package
 # scaffold and test runner are not yet configured.
 source(testthat::test_path("../../R/policy_schedules_2026_27.R"))
+source(testthat::test_path("../../R/scenario.R"))
 source(testthat::test_path("../../R/tax_core.R"))
 
 testthat::test_that("resident tax brackets have the correct boundaries", {
-  testthat::expect_equal(resident_income_tax(18200, "2026-27"), 0)
-  testthat::expect_equal(resident_income_tax(18201, "2026-27"), 0.15)
-  testthat::expect_equal(resident_income_tax(45000, "2026-27"), 4020)
-  testthat::expect_equal(resident_income_tax(45001, "2026-27"), 4020.30)
-  testthat::expect_equal(resident_income_tax(135000, "2026-27"), 31020)
-  testthat::expect_equal(resident_income_tax(135001, "2026-27"), 31020.37)
-  testthat::expect_equal(resident_income_tax(190000, "2026-27"), 51370)
-  testthat::expect_equal(resident_income_tax(190001, "2026-27"), 51370.45)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 18200)), 0)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 18201)), 0.15)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 45000)), 4020)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 45001)), 4020.30)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 135000)), 31020)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 135001)), 31020.37)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 190000)), 51370)
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 190001)), 51370.45)
 })
 
 testthat::test_that("LITO tapers and floors at zero", {
-  testthat::expect_equal(lito(0, "2026-27"), 700)
-  testthat::expect_equal(lito(37500, "2026-27"), 700)
-  testthat::expect_equal(lito(37501, "2026-27"), 699.95)
-  testthat::expect_equal(lito(45000, "2026-27"), 325)
-  testthat::expect_equal(lito(45001, "2026-27"), 324.985)
-  testthat::expect_equal(lito(66667, "2026-27"), 0)
-  testthat::expect_equal(lito(70000, "2026-27"), 0)
+  testthat::expect_equal(lito(new_scenario("2026-27", 0)), 700)
+  testthat::expect_equal(lito(new_scenario("2026-27", 37500)), 700)
+  testthat::expect_equal(lito(new_scenario("2026-27", 37501)), 699.95)
+  testthat::expect_equal(lito(new_scenario("2026-27", 45000)), 325)
+  testthat::expect_equal(lito(new_scenario("2026-27", 45001)), 324.985)
+  testthat::expect_equal(lito(new_scenario("2026-27", 66667)), 0)
+  testthat::expect_equal(lito(new_scenario("2026-27", 70000)), 0)
 })
 
 testthat::test_that("Medicare levy threshold and phase-in boundaries are correct", {
-  testthat::expect_equal(medicare_levy(28011, "2026-27"), 0)
-  testthat::expect_equal(medicare_levy(28012, "2026-27"), 0.10)
-  testthat::expect_equal(medicare_levy(35012, "2026-27"), 700.10)
-  testthat::expect_equal(medicare_levy(35013, "2026-27"), 700.26)
-  testthat::expect_equal(medicare_levy(50000, "2026-27"), 1000)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 28011)), 0)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 28012)), 0.10)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 35012)), 700.10)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 35013)), 700.26)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 50000)), 1000)
 })
 
 testthat::test_that("LITO reduces income tax but not the Medicare levy", {
-  result <- individual_tax_components(30000, "2026-27")
+  result <- individual_tax_components(new_scenario("2026-27", 30000))
   testthat::expect_equal(result$basic_income_tax, 1770)
   testthat::expect_equal(result$lito, 700)
   testthat::expect_equal(result$lito_applied, 700)
@@ -43,14 +44,14 @@ testthat::test_that("LITO reduces income tax but not the Medicare levy", {
 })
 
 testthat::test_that("worked examples reproduce the documented component totals", {
-  low <- individual_tax_components(26000, "2026-27")
+  low <- individual_tax_components(new_scenario("2026-27", 26000))
   testthat::expect_equal(low$basic_income_tax, 1170)
   testthat::expect_equal(low$lito, 700)
   testthat::expect_equal(low$income_tax_after_lito, 470)
   testthat::expect_equal(low$medicare_levy, 0)
   testthat::expect_equal(low$total_tax_and_levies, 470)
 
-  middle <- individual_tax_components(60000, "2026-27")
+  middle <- individual_tax_components(new_scenario("2026-27", 60000))
   testthat::expect_equal(middle$basic_income_tax, 8520)
   testthat::expect_equal(middle$lito, 100)
   testthat::expect_equal(middle$income_tax_after_lito, 8420)
@@ -58,16 +59,23 @@ testthat::test_that("worked examples reproduce the documented component totals",
   testthat::expect_equal(middle$total_tax_and_levies, 9620)
 })
 
-testthat::test_that("invalid taxable income is rejected", {
-  testthat::expect_error(resident_income_tax(-1, "2026-27"), "non-negative")
-  testthat::expect_error(lito(1.5, "2026-27"), "whole-dollar")
-  testthat::expect_error(medicare_levy(NA_real_, "2026-27"), "finite")
-  testthat::expect_error(individual_tax_components(c(10000, 20000), "2026-27"),
-                         "one finite")
+testthat::test_that("scenario inputs are validated by the tax rules", {
+  bad_income <- structure(
+    list(financial_year = "2026-27", taxable_income = c(10000, 20000)),
+    class = "scenario"
+  )
+  testthat::expect_error(individual_tax_components(bad_income), "one finite")
+  testthat::expect_error(resident_income_tax(list(financial_year = "2026-27", taxable_income = 45000)),
+                         "scenario object")
+  bad_year <- structure(
+    list(financial_year = NA_character_, taxable_income = 45000),
+    class = "scenario"
+  )
+  testthat::expect_error(lito(bad_year), "financial_year must be")
 })
 
 testthat::test_that("unused non-refundable LITO is not treated as negative tax", {
-  result <- individual_tax_components(10000, "2026-27")
+  result <- individual_tax_components(new_scenario("2026-27", 10000))
   testthat::expect_equal(result$lito, 700)
   testthat::expect_equal(result$lito_applied, 0)
   testthat::expect_equal(result$income_tax_after_lito, 0)
@@ -134,13 +142,13 @@ testthat::test_that("piecewise schedule rejects malformed interval definitions",
 
 
 testthat::test_that("public tax functions require a supported financial year", {
-  testthat::expect_equal(resident_income_tax(45000, "2026-27"), 4020)
-  testthat::expect_equal(lito(40000, "2026-27"), 575)
-  testthat::expect_equal(medicare_levy(50000, "2026-27"), 1000)
-  testthat::expect_error(resident_income_tax(45000, "2025-26"),
+  testthat::expect_equal(resident_income_tax(new_scenario("2026-27", 45000)), 4020)
+  testthat::expect_equal(lito(new_scenario("2026-27", 40000)), 575)
+  testthat::expect_equal(medicare_levy(new_scenario("2026-27", 50000)), 1000)
+  testthat::expect_error(resident_income_tax(new_scenario("2025-26", 45000)),
                          "Unsupported financial_year")
-  testthat::expect_error(lito(40000, NA_character_),
+  testthat::expect_error(lito(new_scenario(NA_character_, 40000)),
                          "financial_year must be")
-  testthat::expect_error(individual_tax_components(40000, "2025-26"),
+  testthat::expect_error(individual_tax_components(new_scenario("2025-26", 40000)),
                          "Unsupported financial_year")
 })
