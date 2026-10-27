@@ -243,11 +243,13 @@ medicare_levy_surcharge <- function(scenario) {
     reduction <- max(0, family_ati - policy$income_free_area) *
       policy$method_1_taper
     rate <- max(base_rate, maximum_rate - reduction)
+    reduction <- maximum_rate - rate
     method <- "method_1"
   } else {
     reduction <- (family_ati - policy$higher_income_free_area) *
       policy$method_2_taper
     rate <- max(0, base_rate - reduction)
+    reduction <- base_rate - rate
     method <- "method_2"
   }
 
