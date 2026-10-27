@@ -92,6 +92,16 @@ testthat::test_that("FTB adjusted taxable income uses its own income adjustments
   )
 })
 
+testthat::test_that("FTB-A includes only children eligible under age and study rules", {
+  scenario <- make_ftb_scenario(
+    0,
+    list(new_child(5), new_child(17, TRUE, "secondary"),
+         new_child(17, FALSE, "secondary"), new_child(22, TRUE, "tertiary"))
+  )
+  testthat::expect_equal(unname(family_tax_benefit_part_a(scenario)),
+                         6139.30 + 7989.85)
+})
+
 testthat::test_that("FTB-A returns zero with no eligible children", {
   scenario <- new_scenario("2026-27", list(new_adult(50000)))
   testthat::expect_equal(unname(family_tax_benefit_part_a(scenario)), 0)
@@ -99,8 +109,8 @@ testthat::test_that("FTB-A returns zero with no eligible children", {
 
 testthat::test_that("child inputs are validated", {
   testthat::expect_error(new_child(-1), "age")
-  testthat::expect_error(new_child(20), "age")
-  testthat::expect_error(new_child(16), "secondary school student")
-  testthat::expect_error(new_child(15, TRUE), "under age 16")
+  testthat::expect_error(new_child(25), "age")
   testthat::expect_error(new_child(17, NA), "TRUE or FALSE")
+  testthat::expect_error(new_child(17, TRUE), "study_type cannot be")
+  testthat::expect_error(new_child(5, study_type = "unknown"), "study_type")
 })
